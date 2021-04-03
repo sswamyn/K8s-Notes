@@ -1,0 +1,9 @@
+## Few K8s commands that I found useful 
+
+```
+kubectl version --short && \
+ kubectl get componentstatus && \
+ kubectl get nodes && \
+ kubectl cluster-info
+ 
+ ```
