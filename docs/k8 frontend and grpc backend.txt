@@ -1,0 +1,847 @@
+For this scenario, Katacoda has just started a fresh Kubernetes cluster for you. Verify that it's ready for your use.
+
+kubectl version --short && \
+ kubectl get componentstatus && \
+ kubectl get nodes && \
+ kubectl cluster-info
+
+
+ The Helm package manager used for installing applications on Kubernetes is also available.
+
+ helm version --short
+
+Kubernetes Dashboard
+You can administer your cluster with the kubectl CLI tool or use the visual Kubernetes Dashboard. Use this script to access the protected Dashboard.
+
+
+Container Registry
+It's helpful to have a container registry during the build, push, and deploy phases. There is no need to shuttle private images over the internet. Instead, we keep all this pushing and pulling in a local registry.
+
+There are many options for standing up a container registry. We prefer a pure Kubernetes solution and install a registry through the Docker Registry Helm Chart. [https://artifacthub.io/packages/helm/twuni/docker-registry]
+
+Add the chart repository for the Helm chart to be installed:
+
+helm repo add twuni https://helm.twun.io
+
+Install the chart for a private container registry:
+helm install registry twuni/docker-registry \
+  --version 1.10.0 \
+  --namespace kube-system \
+  --set service.type=NodePort \
+  --set service.nodePort=31500
+
+  The registry is now available as a service. It can be listed:
+
+  kubectl get service --namespace kube-system
+
+  Assign an environment variable to the common registry location:
+  export REGISTRY=2886795274-31500-host08nc.environments.katacoda.com
+
+  It will be a few moments before the registry deployment reports it's Available:
+  kubectl get deployments registry-docker-registry --namespace kube-system
+
+  Once the registry is serving, inspect the contents of the empty registry:
+  curl $REGISTRY/v2/_catalog | jq -c
+
+  and you will see this registry response with the expected empty array:
+  {"repositories":[]}
+  If you do not see this response, wait a few moments, and try again. If you have waited and continue to receive an error message, then return to step one and re-verify the health of the cluster.
+
+  ########
+  Clone Node.js Source
+The example Node.js application is simple. Instead of creating an application from scratch, this scenario clones an example project. The source code was inspired by this article by LogRocket: [https://blog.logrocket.com/creating-a-crud-api-with-node-express-and-grpc/]
+
+git clone https://github.com/javajon/node-mountains
+
+Go into the directory:
+cd node-mountains
+
+First, observe the source folder layout:
+tree
+	controlplane $ tree
+.
+├── client
+│   ├── Dockerfile-bloated
+│   ├── Dockerfile-secure
+│   ├── Dockerfile-small
+│   ├── package.json
+│   └── src
+│       ├── client.js
+│       ├── index.js
+│       └── views
+│           └── mountains.hbs
+├── kubernetes
+│   ├── mountains-client.yaml
+│   └── mountains-server.yaml
+├── mountains.proto
+├── README.md
+└── server
+    ├── Dockerfile-bloated
+    ├── Dockerfile-secure
+    ├── Dockerfile-small
+    ├── package.json
+    └── src
+        └── server.js
+
+6 directories, 16 files
+
+```````````````````````````````
+
+This project is separated into two parts:
+
+Server: where gRPC serves the remote calls defined in the proto file
+Client: Express/Node/Bootstrap web page to CRUD the server operations
+
+The client and server folder contain not just the source code, but three different flavors of Dockerfile. In the following steps, we will look at the different container image–packaging techniques. There is also a Kubernetes folder that holds manifests to run the application on Kubernetes. But first, explore the application code.
+
+The ProtoBuf
+In the root folder, there is a mountains.proto file. This defines the gRPC payload called the Protocol Buffer (ProtoBuf):
+ccat mountains.proto
+
+********
+controlplane $ ccat mountains.proto
+syntax = "proto3";
+
+service MountainService {
+    rpc GetAll (Empty) returns (MountainList) {}
+    rpc Get (MountainRequestId) returns (Mountain) {}
+    rpc Insert (Mountain) returns (Mountain) {}
+    rpc Update (Mountain) returns (Mountain) {}
+    rpc Remove (MountainRequestId) returns (Empty) {}
+}
+
+message Empty {}
+
+message Mountain {
+    string id = 1;
+    string name = 2;
+    int32 elevation = 3;
+    string location = 4;
+}
+
+message MountainList {
+    repeated Mountain mountains = 1;
+}
+
+message MountainRequestId {
+    string id = 1;
+}
+controlplane $ 
+********
+
+This is an agnostic definition of the serialized binary data structure that is transmitted between the Web UI and Server containers. It's agnostic of any language, platform, stack, architecture or framework that decides to communicate via gRPC. In this scenario, both the server and client containers are coupled to this schema. gRPC serializes binary data structures between different endpoints. gRPC is available for 10 different languages and this ProtoBuf ensures that future languages can also be supported.
+
+The Server
+The server is just one Node.js file:
+ccat server/src/server.js
+**********
+controlplane $ ccat server/src/server.js
+const PROTO_PATH = "./mountains.proto";
+
+var grpc = require("grpc");
+var protoLoader = require("@grpc/proto-loader");
+
+var packageDefinition = protoLoader.loadSync(PROTO_PATH, {
+    keepCase: true,
+    longs: String,
+    enums: String,
+    arrays: true
+});
+
+var mountainsProto = grpc.loadPackageDefinition(packageDefinition);
+
+const { v4: uuidv4 } = require("uuid");
+
+const server = new grpc.Server();
+const mountains = [
+    {
+        id: "a48a6488-fba6-11ea-adc1-0242ac120002",
+        name: "Mt. Washington",
+        elevation: 1917,
+        location: "44_16_13.8_N_71_18_11.7_W"
+    },
+    {
+        id: "a48a8cce-fba6-11ea-adc1-0242ac120002",
+        name: "Flatirons",
+        elevation: 2484,
+        location: "39.988_N_105.293_W"
+    }
+];
+
+server.addService(mountainsProto.MountainService.service, {
+    getAll: (_, callback) => {
+        callback(null, { mountains });
+    },
+
+    get: (call, callback) => {
+        let mountain = mountains.find(n => n.id == call.request.id);
+
+        if (mountain) {
+            callback(null, mountain);
+        } else {
+            callback({
+                code: grpc.status.NOT_FOUND,
+                details: "Not found"
+            });
+        }
+    },
+
+    insert: (call, callback) => {
+        let mountain = call.request;
+        
+        mountain.id = uuidv4();
+        mountains.push(mountain);
+        callback(null, mountain);
+    },
+
+    update: (call, callback) => {
+        let existingMountain = mountains.find(n => n.id == call.request.id);
+
+        if (existingMountain) {
+            existingMountain.name = call.request.name;
+            existingMountain.elevation = call.request.elevation;
+            existingMountain.location = call.request.location;
+            callback(null, existingMountain);
+        } else {
+            callback({
+                code: grpc.status.NOT_FOUND,
+                details: "Not found"
+            });
+        }
+    },
+
+    remove: (call, callback) => {
+        let existingMountainIndex = mountains.findIndex(
+            n => n.id == call.request.id
+        );
+
+        if (existingMountainIndex != -1) {
+            mountains.splice(existingMountainIndex, 1);
+            callback(null, {});
+        } else {
+            callback({
+                code: grpc.status.NOT_FOUND,
+                details: "Not found"
+            });
+        }
+    }
+});
+
+server.bind("0.0.0.0:8321", grpc.ServerCredentials.createInsecure());
+console.log("Server running at 0.0.0.0:8321");
+server.start();
+controlplane $ ccat server/src/server.js
+const PROTO_PATH = "./mountains.proto";
+
+var grpc = require("grpc");
+var protoLoader = require("@grpc/proto-loader");
+
+var packageDefinition = protoLoader.loadSync(PROTO_PATH, {
+    keepCase: true,
+    longs: String,
+    enums: String,
+    arrays: true
+});
+
+var mountainsProto = grpc.loadPackageDefinition(packageDefinition);
+
+const { v4: uuidv4 } = require("uuid");
+
+const server = new grpc.Server();
+const mountains = [
+    {
+        id: "a48a6488-fba6-11ea-adc1-0242ac120002",
+        name: "Mt. Washington",
+        elevation: 1917,
+        location: "44_16_13.8_N_71_18_11.7_W"
+    },
+    {
+        id: "a48a8cce-fba6-11ea-adc1-0242ac120002",
+        name: "Flatirons",
+        elevation: 2484,
+        location: "39.988_N_105.293_W"
+    }
+];
+
+server.addService(mountainsProto.MountainService.service, {
+    getAll: (_, callback) => {
+        callback(null, { mountains });
+    },
+
+    get: (call, callback) => {
+        let mountain = mountains.find(n => n.id == call.request.id);
+
+        if (mountain) {
+            callback(null, mountain);
+        } else {
+            callback({
+                code: grpc.status.NOT_FOUND,
+                details: "Not found"
+            });
+        }
+    },
+
+    insert: (call, callback) => {
+        let mountain = call.request;
+        
+        mountain.id = uuidv4();
+        mountains.push(mountain);
+        callback(null, mountain);
+    },
+
+    update: (call, callback) => {
+        let existingMountain = mountains.find(n => n.id == call.request.id);
+
+        if (existingMountain) {
+            existingMountain.name = call.request.name;
+            existingMountain.elevation = call.request.elevation;
+            existingMountain.location = call.request.location;
+            callback(null, existingMountain);
+        } else {
+            callback({
+                code: grpc.status.NOT_FOUND,
+                details: "Not found"
+            });
+        }
+    },
+
+    remove: (call, callback) => {
+        let existingMountainIndex = mountains.findIndex(
+            n => n.id == call.request.id
+        );
+
+        if (existingMountainIndex != -1) {
+            mountains.splice(existingMountainIndex, 1);
+            callback(null, {});
+        } else {
+            callback({
+                code: grpc.status.NOT_FOUND,
+                details: "Not found"
+            });
+        }
+    }
+});
+
+server.bind("0.0.0.0:8321", grpc.ServerCredentials.createInsecure());
+console.log("Server running at 0.0.0.0:8321");
+server.start();
+controlplane $ 
+**********
+
+The code is a basic CRUD model that holds in memory a list of mountains. With a real microservice, this mountain of data would most likely be safely kept in a persistent datastore. The server exposes its gRPC channel on the arbitrary port 8321.
+
+The Client
+Distracting ourselves with how Express.js works is outside the scope of the scenario, but all the source code is there so that you can later dissect how the web interface is constructed. The entry point into the client is
+index.js:
+
+ccat client/src/index.js
+***********
+controlplane $ ccat client/src/index.js
+const client = require("./client");
+
+const path = require("path");
+const express = require("express");
+const bodyParser = require("body-parser");
+
+const app = express();
+
+app.set("views", path.join(__dirname, "views"));
+app.set("view engine", "hbs");
+
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: false }));
+
+app.get("/", (req, res) => {
+        client.getAll(null, (err, data) => {
+                if (!err) {
+                        res.render("mountains", {
+                                results: data.mountains
+                        });
+                }
+        });
+});
+
+app.post("/save", (req, res) => {
+        let newMountain = {
+                name: req.body.name,
+                elevation: req.body.elevation,
+                location: req.body.location
+        };
+
+        client.insert(newMountain, (err, data) => {
+                if (err) throw err;
+
+                console.log("Mountain created successfully", data);
+                res.redirect("/");
+        });
+});
+
+app.post("/update", (req, res) => {
+        const updateMountain = {
+                id: req.body.id,
+                name: req.body.name,
+                elevation: req.body.elevation,
+                location: req.body.location
+        };
+
+        client.update(updateMountain, (err, data) => {
+                if (err) throw err;
+
+                console.log("Mountain updated successfully", data);
+                res.redirect("/");
+        });
+});
+
+app.post("/remove", (req, res) => {
+        client.remove({ id: req.body.mountain_id }, (err, _) => {
+                if (err) throw err;
+
+                console.log("Mountain removed successfully");
+                res.redirect("/");
+        });
+});
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+        console.log("Server running at port %d", PORT);
+});
+controlplane $ 
+***********
+
+
+
+A series of calls from the app's UI are implemented. Each path makes a gRPC call. The connection to gRPC is through:
+
+ccat client/src/client.js
+**********
+controlplane $ ccat client/src/client.js
+const PROTO_PATH = "./mountains.proto";
+const MOUNTAINS_SERVER = process.env.MOUNTAINS_SERVER || "localhost:8321";
+
+const grpc = require("grpc");
+const protoLoader = require("@grpc/proto-loader");
+
+var packageDefinition = protoLoader.loadSync(PROTO_PATH, {
+        keepCase: true,
+        longs: String,
+        enums: String,
+        arrays: true
+});
+
+const MountainService = grpc.loadPackageDefinition(packageDefinition).MountainService;
+const client = new MountainService(
+        MOUNTAINS_SERVER,
+        grpc.credentials.createInsecure()
+);
+
+console.log("Connecting to server %s", MOUNTAINS_SERVER)
+
+module.exports = client;
+controlplane $ 
+*********
+
+
+process.env.MOUNTAINS_SERVER refers to the address of the mountains server. When you get this running on Kubernetes, this is just the name of the mountain service. The client starts its web UI on port 3000. An environment variable is provided to the application to connect to the mountains service.
+
+Before we get into running this on Kubernetes, let's package both the client and server Node.js applications into container images.
+
+###############
+Bloated Container Image
+
+
+In these next three steps, we are going to look at different ways of packaging Node.js applications into container images. This step first looks at how not to use Dockerfiles to define a Node.js container image. This example creates a fairly large container image size—much larger than it should be, and people often fall into some bad habits.
+
+A Dockerfile has already been provided for the client and server:
+
+ccat -l Dockerfile client/Dockerfile-bloated
+****
+controlplane $ ccat -l Dockerfile client/Dockerfile-bloated
+FROM node:14.11.0
+WORKDIR /usr/src/app
+COPY mountains.proto ./
+COPY client/package*.json ./
+COPY client/src/ ./
+RUN npm install
+CMD ["node", "index"]
+controlplane $ 
+****
+
+ccat -l Dockerfile server/Dockerfile-bloated
+*****
+controlplane $ ccat -l Dockerfile server/Dockerfile-bloated
+FROM node:14.11.0
+WORKDIR /usr/src/app
+COPY mountains.proto ./
+COPY server/package*.json ./
+COPY server/src/ ./
+RUN npm install
+CMD ["node", "server.js"]
+*****
+
+
+Seems straightforward. In seven lines, it leverages an existing Node container, loads the application payload, resolves dependencies with npm install, and serves the application on a port. Notice that the same mountains.proto is copied into both containers. This coupling is necessary when two applications exchange the same binary streamed data structures over gRPC. However, it's the only coupling, and each data structure should be in separate, modular proto definitions. Again, these ProtoBufs are language independent.
+
+Let's build the two containers and see what it produces:
+
+docker build -t $REGISTRY/mountains-client-bloated:0.1.0 -f client/Dockerfile-bloated .
+
+docker build -t $REGISTRY/mountains-server-bloated:0.1.0 -f server/Dockerfile-bloated .
+
+It will take 2-3 minutes to create both containers. Once complete, verify that the container images have been produced:
+It will take 2-3 minutes to create both containers. Once complete, verify that the container images have been produced:
+
+docker images "*/mountains-*"
+
+Notice the size of each container is close to a full gigabyte in size. This is a small demonstration application. Not much actual code. All too often people are assembling applications into bloated container images like this. These Dockerfiles illustrate some poor packaging practices, particularly if they will be deployed to expensive Kubernetes clusters.
+
+In the next step, let's apply some distillation.
+
+################
+Alpine Linux–based containers are often used as a base container because of their very small image size footprint. Alpine containers are close to 5 MB. A Dockerfile has already been provided that leverages Alpine:
+ccat -l Dockerfile client/Dockerfile-small
+
+ccat -l Dockerfile server/Dockerfile-small
+
+******
+controlplane $ ccat -l Dockerfile client/Dockerfile-small
+FROM node:14.11.0-alpine3.12 AS build
+WORKDIR /usr/src/app
+COPY mountains.proto ./
+COPY client/package*.json ./
+COPY client/src/ ./
+RUN ["npm", "install"]
+
+FROM node:14.11.0-alpine3.12
+WORKDIR /app
+COPY --from=build /usr/src/app ./
+EXPOSE 3000
+CMD ["start"]
+controlplane $ ccat -l Dockerfile server/Dockerfile-small
+FROM node:14 AS build
+WORKDIR /usr/src/app
+COPY mountains.proto ./
+COPY server/package*.json ./
+COPY server/src/ ./
+RUN ["npm", "install"]
+
+FROM gcr.io/distroless/nodejs:14
+WORKDIR /app
+COPY --from=build /usr/src/app ./
+EXPOSE 8321
+CMD ["start"]
+controlplane $ 
+
+********
+
+Notice that the FROM command references a base container that combined Node into Alpine. Actually, there are two FROM commands. These Dockerfiles also introduce the idea of multistage builds. The first stage (FROM node:X) does the building and resolution of the dependencies. The second stage (FROM node:X.X.X-alpineX.X) simply copies the resulting build artifacts into the final stage. This is because the first stage has many unneeded files as part of npm install. Except for the final artifacts copied "--from=builder", everything else in the first builder stage is discarded. Notice that the last stage is the only one packaged into the final container image, and it's based on Alpine Linux. Let's see how much this saves us:
+
+docker build -t $REGISTRY/mountains-client-small:0.1.0 -f client/Dockerfile-small .
+
+docker build -t $REGISTRY/mountains-server-small:0.1.0 -f server/Dockerfile-small .
+
+It will take 2-3 minutes to create both Alpine-based containers. Once complete, verify that the container images have been produced:
+
+docker images "*/mountains-*"
+
+By combining a few techniques, we reduced the container image size to 184MB, a savings close to ~80%! Smaller images take less space to store and can be distributed to the cluster, reducing storage costs, network traffic, and startup delays. Some of the techniques applied were:
+
+1. Using a multistage build where the final stage discounts the dependency tree from npm
+2. Making the multistage final container Alpine-based rather than Debian-based
+
+We also applied better documentation techniques. If you have resources or pipelines that benefit from small container images, then use these techniques.
+
+However, there is an additional distillation step to consider next.
+
+	controlplane $ docker images "*/mountains-*"
+REPOSITORY                                                                     TAG                 IMAGE ID            CREATED              SIZE
+2886795274-31500-host08nc.environments.katacoda.com/mountains-server-small     0.1.0               e0a81ee15569        9 seconds ago        184MB
+2886795274-31500-host08nc.environments.katacoda.com/mountains-client-small     0.1.0               6407dfe802b4        About a minute ago   183MB
+2886795274-31500-host08nc.environments.katacoda.com/mountains-client-bloated   0.1.0               5e37aca2c19f        3 minutes ago        1.02GB
+controlplane $ ^C
+controlplane $
+
+######################
+Secure Container Image
+
+
+Let's take distillation a step further with containers based on distroless:
+
+ccat -l Dockerfile client/Dockerfile-secure
+
+ccat -l Dockerfile server/Dockerfile-secure
+*****
+controlplane $ ccat -l Dockerfile client/Dockerfile-secure
+FROM node:14 AS build
+WORKDIR /usr/src/app
+COPY mountains.proto ./
+COPY client/package*.json ./
+COPY client/src/ ./
+RUN ["npm", "install", "--production"]
+
+FROM gcr.io/distroless/nodejs:14
+WORKDIR /app
+COPY --from=build /usr/src/app ./
+EXPOSE 3000
+CMD ["index.js"]
+controlplane $ ccat -l Dockerfile server/Dockerfile-secure
+FROM node:14 AS build
+WORKDIR /usr/src/app
+COPY mountains.proto ./
+COPY server/package*.json ./
+COPY server/src/ ./
+RUN ["npm", "install", "--production"]
+
+FROM gcr.io/distroless/nodejs:14
+WORKDIR /app
+COPY --from=build /usr/src/app ./
+EXPOSE 8321
+CMD ["server.js"]
+    
+controlplane $ 
+*******
+
+Distroless containers are minimal containers derived from scratch containers that omit any Linux distribution artifacts. Distroless and gRPC are projects governed by Google. Like gRPC, distroless is all about efficiency. Distroless containers follow the mantras of the distillation pattern for containers. Let's see how much this saves us:
+[https://hub.docker.com/_/scratch]
+
+docker build -t $REGISTRY/mountains-client-secure:0.1.0 -f client/Dockerfile-secure .
+
+docker build -t $REGISTRY/mountains-server-secure:0.1.0 -f server/Dockerfile-secure .
+
+They will take 1-2 minutes to create both distroless-based containers. Once complete, verify that the container images have been produced:
+docker images "*/mountains-*"
+
+Notice that the distroless-based containers are nearly the same size as the Alpine images, and still significantly smaller than the first bloated images. Distroless-based images promise higher security over Alpine, whereas Alpine primarily offers the smallest image size. No matter what base image you choose, be sure to thoroughly test your application in the base to decide use. Some larger applications have historically had occasional trouble with Alpine-based packaging, often due to the musl libc implementation variants.
+[https://www.musl-libc.org/] 'musl libc'
+
+Distroless Containers
+"Distroless" images contain only your application and its runtime dependencies. They do not contain package managers, shells, or any other programs you would expect to find in a standard Linux distribution. Restricting what's in your runtime container to precisely what's necessary for your app is a best practice employed by Google and other tech giants that have used containers in production for many years. It improves the signal-to-noise of scanners (e.g., CVE) and reduces the burden of establishing provenance to just what you need. (See distroless on GitHub.) 
+[ https://github.com/GoogleContainerTools/distroless ]
+
+Some distroless advantages:
+Some distroless advantages:
+
+Has a restricted attack vector
+Reduces image vulnerabilities
+Enforces immutability
+Protects secret variables
+Secure network connection
+However, you may find that debugging distroless containers can sometimes be frustrating because you can't shell into them and inspect artifacts. There's no shell or package manager since that's a potential attack vector (as well as having nothing to do with the requirements of your business application). With Kubernetes, developers will sometimes add sidecars or the newish ephemeral containers next to the distroless containers for debugging and diagnostics.
+[ephemeral containers https://kubernetes.io/docs/concepts/workloads/pods/ephemeral-containers/#ephemeral-containers-api]
+
+Deploy Application
+The names of the application components are mountains-client and mountains-server. All three container variants (bloated, small, and secure) vary by name. You could deploy all three variants on your cluster, but we'll instead just deploy the last secure containers you built. The deployment process follows the DRY pattern by using environment variables. We'll use the secure variant:
+
+export SUFFIX=secure
+
+Later, you can come back to this step and try to use other container image names as the suffix, like bloated and small.
+[DRY pattern https://en.wikipedia.org/wiki/Don't_repeat_yourself]
+
+Push Containers
+Push the container images to the private registry on Kubernetes that was installed in step 2:
+
+docker push $REGISTRY/mountains-client-$SUFFIX:0.1.0
+
+docker push $REGISTRY/mountains-server-$SUFFIX:0.1.0
+
+Since the containers are small, this should take only a moment. Inspect the contents of the registry, now listing the pushed container images:
+curl $REGISTRY/v2/_catalog | jq
+****
+ontrolplane $ curl $REGISTRY/v2/_catalog | jq
+{
+  "repositories": [
+    "mountains-client-secure",
+    "mountains-server-secure"
+  ]
+}
+controlplane $ 
+*****
+
+############
+Deploy Service and Deployment Manifests
+The Kubernetes Deployment and Service manifest YAML file for the client and server has $REGISTRY and $SUFFIX variables inside. They need to be replaced with the environment values for these keys.
+
+We could have used kuberctl kustomize for substituting these parameters, but Kustomize as a templating mechanism oddly falls short when accommodating environment variables. We could also use Helm, but it's overkill for this situation. Instead, we simply use a trusted Linux utility called envsubst.
+[https://kubernetes.io/docs/tasks/manage-kubernetes-objects/kustomization/]
+[https://www.gnu.org/software/gettext/manual/html_node/envsubst-Invocation.html]
+Use the envsubst command to replace the environment variables:
+
+envsubst < kubernetes/mountains-client.yaml > mountains-client-resolved.yaml
+
+envsubst < kubernetes/mountains-server.yaml > mountains-server-resolved.yaml
+
+Inspect the Kubernetes resource declaration for starting the mountains application:
+
+ccat mountains-client-resolved.yaml
+
+*****
+controlplane $ envsubst < kubernetes/mountains-client.yaml > mountains-client-resolved.yaml
+controlplane $ envsubst < kubernetes/mountains-server.yaml > mountains-server-resolved.yaml
+controlplane $ ccat mountains-client-resolved.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: mountains-client-secure
+spec:
+  ports:
+  - name: web
+    port: 3000
+    nodePort: 30300
+    targetPort: web 
+  selector:
+    app: mountains-client-secure
+  type: NodePort
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mountains-client-secure
+  labels:
+    app: mountains-client-secure
+spec:
+  selector:
+    matchLabels:
+      app: mountains-client-secure
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: mountains-client-secure
+    spec:
+      containers:
+      - name: mountains-client-secure
+        image: 2886795274-31500-host08nc.environments.katacoda.com/mountains-client-secure:0.1.0
+        imagePullPolicy: Always
+        ports:
+          - name: web
+            containerPort: 3000
+        env:
+          - name: MOUNTAINS_SERVER
+            value: "mountains-server-secure:8321"
+          - name: DEBUG
+            value: "express:*"
+          - name: GRPC_VERBOSITY
+            value: "INFO"
+          - name: GRPC_TRACE
+            value: "all"
+controlplane $ 
+******
+
+ccat mountains-server-resolved.yaml
+********
+controlplane $ ccat mountains-server-resolved.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: mountains-server-secure
+  name: mountains-server-secure
+spec:
+  ports:
+  - port: 8321
+    targetPort: grpc
+  selector:
+    app: mountains-server-secure
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mountains-server-secure
+  labels:
+    app: mountains-server-secure
+spec:
+  selector:
+    matchLabels:
+      app: mountains-server-secure
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: mountains-server-secure
+    spec:
+      containers:
+      - name: mountains-server-secure
+        image: 2886795274-31500-host08nc.environments.katacoda.com/mountains-server-secure:0.1.0
+        imagePullPolicy: Always
+        ports:
+          - name: grpc
+            containerPort: 8321
+        env:
+          - name: GRPC_VERBOSITY
+            value: "INFO"
+          - name: GRPC_TRACE
+            value: "all"
+controlplane $ 
+
+**********
+
+Deploy the client and server application to Kubernetes:
+
+kubectl apply -f mountains-client-resolved.yaml -f mountains-server-resolved.yaml
+
+In a moment, the application will be available:
+
+kubectl get deployments,pods,services
+*******
+controlplane $ kubectl apply -f mountains-client-resolved.yaml -f mountains-server-resolved.yaml
+service/mountains-client-secure created
+deployment.apps/mountains-client-secure created
+service/mountains-server-secure created
+deployment.apps/mountains-server-secure created
+controlplane $ kubectl get deployments,pods,services
+NAME                                      READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/mountains-client-secure   1/1     1            1           14s
+deployment.apps/mountains-server-secure   1/1     1            1           14s
+
+NAME                                           READY   STATUS    RESTARTS   AGE
+pod/mountains-client-secure-77594dcb85-fxz54   1/1     Running   0          14s
+pod/mountains-server-secure-b5dbfcc77-fmf2w    1/1     Running   0          14s
+
+NAME                              TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)          AGE
+service/kubernetes                ClusterIP   10.96.0.1       <none>        443/TCP          87m
+service/mountains-client-secure   NodePort    10.102.81.110   <none>        3000:30300/TCP   14s
+service/mountains-server-secure   ClusterIP   10.98.166.36    <none>        8321/TCP         14s
+controlplane $ 
+********
+
+Verify Application
+Now that the application is running, access its web interface:
+
+Mountains App
+
+Keep in mind that in the interface each time you list, create, update, or remove an item in the mountains list, there is a corresponding gRPC message that transmits binary mountain data structures between each container.
+
+
+###########
+You just climbed a big mountain. You tackled the concepts of building Node.js into a container and connecting the two applications with gRPC. All of this running on Kubernetes. Enjoy the fresh air at the top.
+
+You can use this scenario as a building block for your next gRPC-based microservices. It may not be in Node.js, but the same concepts and gRPC API library calls can be applied in a variety of other languages. The distillation patterns we applied can also translate into other language packaging for container images.
+
+If you are concerned about the image size, the startup time, or configuring the memory and CPU, then head over to the scenario Distilled JRE Apps in Containers.
+
+Lessons Learned
+With these steps, you have learned how to:
+
+✔ Write a "getting started" Node.js web and server application
+✔ Connect two applications that communicate using gRPC
+✔ Compose a Node.js application into a distilled container
+✔ Push a container to a private registry on Kubernetes
+✔ Instruct Kubernetes to start an application
+✔ Access an application service running on Kubernetes
+References
+Node.js is a JavaScript runtime built on Chrome's V8 JavaScript engine.
+Express.js is a fast, unopinionated, minimalist web framework for Node.js.
+gRPC is a high-performance, open source universal RPC framework.
+Scenario adapted from LogRocket's article
+Distroless containers
+Scratch containers
+Ephemeral containers
+
+
+https://artifacthub.io/packages/helm/twuni/docker-registry
+https://blog.logrocket.com/creating-a-crud-api-with-node-express-and-grpc/
+https://kubernetes.io/docs/tasks/manage-kubernetes-objects/kustomization/
+https://www.gnu.org/software/gettext/manual/html_node/envsubst-Invocation.html
+https://grpc.io/
+https://grpc.io/docs/languages/go/quickstart/
+https://developers.google.com/protocol-buffers/docs/tutorials
+

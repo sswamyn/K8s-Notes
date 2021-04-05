@@ -1,0 +1,175 @@
+eksctl create cluster --name dev-cluster --version 1.19 --region us-east-1 --nodegroup-name standard-workers --node-type t3.micro --nodes 3  --nodes-min 1 --nodes-max 4  --managed
+
+
+eksctl get cluster 
+
+>> [ec2-user@ip-10-0-0-112 ~]$ eksctl get cluster
+2021-03-20 23:43:44 [ℹ]  eksctl version 0.41.0
+2021-03-20 23:43:44 [ℹ]  using region us-east-1
+NAME            REGION          EKSCTL CREATED
+dev-cluster     us-east-1       True
+
+#####
+aws eks update-kubeconfig --name dev-cluster --region us-east-1 
+
+>> Added new context arn:aws:eks:us-east-1:000867796382:cluster/dev-cluster to /home/ec2-user/.kube/config
+
+
+git clone https://github.com/ACloudGuru-Resources/Course_EKS-Basics
+
+
+
+
+[ec2-user@ip-10-0-0-112 Course_EKS-Basics]$ kubectl apply -f ./nginx-svc.yaml
+service/nginx-svc created
+[ec2-user@ip-10-0-0-112 Course_EKS-Basics]$ kubectl get svc
+NAME         TYPE           CLUSTER-IP   EXTERNAL-IP                                                               PORT(S)        AGE
+kubernetes   ClusterIP      10.100.0.1   <none>                                                                    443/TCP        22m
+nginx-svc    LoadBalancer   10.100.8.7   a5e0eb2bdd9954c498a873c6f26eb891-1190793110.us-east-1.elb.amazonaws.com   80:32539/TCP   16s
+[ec2-user@ip-10-0-0-112 Course_EKS-Basics]$
+[ec2-user@ip-10-0-0-112 Course_EKS-Basics]$
+[ec2-user@ip-10-0-0-112 Course_EKS-Basics]$
+[ec2-user@ip-10-0-0-112 Course_EKS-Basics]$ kubectl apply -f ./nginx-deployment.yaml
+deployment.apps/nginx-deployment created
+[ec2-user@ip-10-0-0-112 Course_EKS-Basics]$ kubectl get deployments
+NAME               READY   UP-TO-DATE   AVAILABLE   AGE
+nginx-deployment   3/3     3            3           28s
+[ec2-user@ip-10-0-0-112 Course_EKS-Basics]$ kubectl get nodes
+NAME                             STATUS   ROLES    AGE   VERSION
+ip-192-168-2-46.ec2.internal     Ready    <none>   17m   v1.19.6-eks-49a6c0
+ip-192-168-24-250.ec2.internal   Ready    <none>   17m   v1.19.6-eks-49a6c0
+ip-192-168-36-8.ec2.internal     Ready    <none>   17m   v1.19.6-eks-49a6c0
+[ec2-user@ip-10-0-0-112 Course_EKS-Basics]$ kubectl get replaicset
+error: the server doesn't have a resource type "replaicset"
+[ec2-user@ip-10-0-0-112 Course_EKS-Basics]$ kubectl get replicaset
+NAME                         DESIRED   CURRENT   READY   AGE
+nginx-deployment-75ffc6d4d   3         3         3       59s
+[ec2-user@ip-10-0-0-112 Course_EKS-Basics]$
+
+###############################
+
+
+
+
+
+NAME                             STATUS   ROLES    AGE   VERSION
+ip-192-168-2-46.ec2.internal     Ready    <none>   22m   v1.19.6-eks-49a6c0
+ip-192-168-24-250.ec2.internal   Ready    <none>   22m   v1.19.6-eks-49a6c0
+ip-192-168-36-8.ec2.internal     Ready    <none>   22m   v1.19.6-eks-49a6c0
+[ec2-user@ip-10-0-0-112 Course_EKS-Basics]$ kubectl get pods
+NAME                               READY   STATUS    RESTARTS   AGE
+nginx-deployment-75ffc6d4d-479wg   1/1     Running   0          5m14s
+nginx-deployment-75ffc6d4d-lcxjr   1/1     Running   0          5m14s
+nginx-deployment-75ffc6d4d-txqv6   1/1     Running   0          5m14s
+[ec2-user@ip-10-0-0-112 Course_EKS-Basics]$ kubectl get nodes
+NAME                             STATUS     ROLES    AGE   VERSION
+ip-192-168-2-46.ec2.internal     NotReady   <none>   22m   v1.19.6-eks-49a6c0
+ip-192-168-24-250.ec2.internal   NotReady   <none>   22m   v1.19.6-eks-49a6c0
+ip-192-168-36-8.ec2.internal     NotReady   <none>   22m   v1.19.6-eks-49a6c0
+[ec2-user@ip-10-0-0-112 Course_EKS-Basics]$ kubectl get pods
+NAME                               READY   STATUS    RESTARTS   AGE
+nginx-deployment-75ffc6d4d-479wg   1/1     Running   0          5m26s
+nginx-deployment-75ffc6d4d-lcxjr   1/1     Running   0          5m26s
+nginx-deployment-75ffc6d4d-txqv6   1/1     Running   0          5m26s
+[ec2-user@ip-10-0-0-112 Course_EKS-Basics]$ kubectl get pods
+NAME                               READY   STATUS    RESTARTS   AGE
+nginx-deployment-75ffc6d4d-479wg   1/1     Running   0          5m31s
+nginx-deployment-75ffc6d4d-lcxjr   1/1     Running   0          5m31s
+nginx-deployment-75ffc6d4d-txqv6   1/1     Running   0          5m31s
+[ec2-user@ip-10-0-0-112 Course_EKS-Basics]$ kubectl get pods
+NAME                               READY   STATUS    RESTARTS   AGE
+nginx-deployment-75ffc6d4d-479wg   1/1     Running   0          5m38s
+nginx-deployment-75ffc6d4d-lcxjr   1/1     Running   0          5m38s
+nginx-deployment-75ffc6d4d-txqv6   1/1     Running   0          5m38s
+[ec2-user@ip-10-0-0-112 Course_EKS-Basics]$ kubectl get pods -w
+NAME                               READY   STATUS    RESTARTS   AGE
+nginx-deployment-75ffc6d4d-479wg   1/1     Running   0          5m43s
+nginx-deployment-75ffc6d4d-lcxjr   1/1     Running   0          5m43s
+nginx-deployment-75ffc6d4d-txqv6   1/1     Running   0          5m43s
+nginx-deployment-75ffc6d4d-479wg   1/1     Terminating   0          6m20s
+nginx-deployment-75ffc6d4d-4jvlz   0/1     Pending       0          0s
+nginx-deployment-75ffc6d4d-4jvlz   0/1     Pending       0          0s
+
+nginx-deployment-75ffc6d4d-4jvlz   0/1     Pending       0          88s
+nginx-deployment-75ffc6d4d-txqv6   1/1     Terminating   0          8m14s
+nginx-deployment-75ffc6d4d-tmhp6   0/1     Pending       0          0s
+nginx-deployment-75ffc6d4d-tmhp6   0/1     Pending       0          0s
+nginx-deployment-75ffc6d4d-tmhp6   0/1     Pending       0          9s
+nginx-deployment-75ffc6d4d-tmhp6   0/1     ContainerCreating   0          9s
+nginx-deployment-75ffc6d4d-4jvlz   0/1     Pending             0          2m4s
+nginx-deployment-75ffc6d4d-tmhp6   1/1     Running             0          15s
+^C[ec2-user@ip-10-0-0-112 Course_EKS-Basics]$ kubectl get pods
+NAME                               READY   STATUS        RESTARTS   AGE
+nginx-deployment-75ffc6d4d-479wg   1/1     Terminating   0          8m40s
+nginx-deployment-75ffc6d4d-4jvlz   0/1     Pending       0          2m20s
+nginx-deployment-75ffc6d4d-lcxjr   1/1     Running       0          8m40s
+nginx-deployment-75ffc6d4d-tmhp6   1/1     Running       0          26s
+nginx-deployment-75ffc6d4d-txqv6   1/1     Terminating   0          8m40s
+[ec2-user@ip-10-0-0-112 Course_EKS-Basics]$ kubectl get nodes
+NAME                             STATUS                        ROLES    AGE   VERSION
+ip-192-168-2-46.ec2.internal     NotReady                      <none>   25m   v1.19.6-eks-49a6c0
+ip-192-168-24-250.ec2.internal   NotReady,SchedulingDisabled   <none>   25m   v1.19.6-eks-49a6c0
+ip-192-168-36-8.ec2.internal     NotReady,SchedulingDisabled   <none>   25m   v1.19.6-eks-49a6c0
+ip-192-168-38-86.ec2.internal    Ready                         <none>   57s   v1.19.6-eks-49a6c0
+[ec2-user@ip-10-0-0-112 Course_EKS-Basics]$ kubectl get pods -w
+NAME                               READY   STATUS        RESTARTS   AGE
+nginx-deployment-75ffc6d4d-479wg   1/1     Terminating   0          8m54s
+nginx-deployment-75ffc6d4d-4jvlz   0/1     Pending       0          2m34s
+nginx-deployment-75ffc6d4d-lcxjr   1/1     Running       0          8m54s
+nginx-deployment-75ffc6d4d-tmhp6   1/1     Running       0          40s
+nginx-deployment-75ffc6d4d-txqv6   1/1     Terminating   0          8m54s
+nginx-deployment-75ffc6d4d-4jvlz   0/1     Pending       0          3m10s
+nginx-deployment-75ffc6d4d-4jvlz   0/1     Pending       0          3m32s
+nginx-deployment-75ffc6d4d-4jvlz   0/1     ContainerCreating   0          3m32s
+nginx-deployment-75ffc6d4d-4jvlz   1/1     Running             0          3m37s
+nginx-deployment-75ffc6d4d-lcxjr   1/1     Terminating         0          10m
+nginx-deployment-75ffc6d4d-rdj2f   0/1     Pending             0          0s
+nginx-deployment-75ffc6d4d-rdj2f   0/1     Pending             0          0s
+nginx-deployment-75ffc6d4d-rdj2f   0/1     ContainerCreating   0          0s
+nginx-deployment-75ffc6d4d-rdj2f   0/1     Terminating         0          0s
+nginx-deployment-75ffc6d4d-s7bpv   0/1     Pending             0          0s
+nginx-deployment-75ffc6d4d-s7bpv   0/1     Pending             0          0s
+nginx-deployment-75ffc6d4d-rdj2f   0/1     Terminating         0          17s
+nginx-deployment-75ffc6d4d-rdj2f   0/1     Terminating         0          17s
+nginx-deployment-75ffc6d4d-s7bpv   0/1     Pending             0          73s
+nginx-deployment-75ffc6d4d-s7bpv   0/1     Pending             0          106s
+nginx-deployment-75ffc6d4d-s7bpv   0/1     ContainerCreating   0          106s
+nginx-deployment-75ffc6d4d-s7bpv   1/1     Running             0          111s
+^C[ec2-user@ip-10-0-0-112 Course_EKS-Basics]$ kubectl get nodes
+NAME                             STATUS                        ROLES    AGE     VERSION
+ip-192-168-2-46.ec2.internal     NotReady,SchedulingDisabled   <none>   30m     v1.19.6-eks-49a6c0
+ip-192-168-24-250.ec2.internal   NotReady,SchedulingDisabled   <none>   30m     v1.19.6-eks-49a6c0
+ip-192-168-36-8.ec2.internal     NotReady,SchedulingDisabled   <none>   30m     v1.19.6-eks-49a6c0
+ip-192-168-38-86.ec2.internal    Ready                         <none>   5m17s   v1.19.6-eks-49a6c0
+ip-192-168-41-16.ec2.internal    Ready                         <none>   103s    v1.19.6-eks-49a6c0
+ip-192-168-5-150.ec2.internal    Ready                         <none>   3m36s   v1.19.6-eks-49a6c0
+[ec2-user@ip-10-0-0-112 Course_EKS-Basics]$ kubectl get pods -w
+NAME                               READY   STATUS        RESTARTS   AGE
+nginx-deployment-75ffc6d4d-479wg   1/1     Terminating   0          13m
+nginx-deployment-75ffc6d4d-4jvlz   1/1     Running       0          6m50s
+nginx-deployment-75ffc6d4d-lcxjr   1/1     Terminating   0          13m
+nginx-deployment-75ffc6d4d-s7bpv   1/1     Running       0          3m
+nginx-deployment-75ffc6d4d-tmhp6   1/1     Running       0          4m56s
+nginx-deployment-75ffc6d4d-txqv6   1/1     Terminating   0          13m
+^C[ec2-user@ip-10-0-0-112 Course_EKS-Basics]$ kubectl get pods
+NAME                               READY   STATUS        RESTARTS   AGE
+nginx-deployment-75ffc6d4d-479wg   1/1     Terminating   0          14m
+nginx-deployment-75ffc6d4d-4jvlz   1/1     Running       0          7m56s
+nginx-deployment-75ffc6d4d-lcxjr   1/1     Terminating   0          14m
+nginx-deployment-75ffc6d4d-s7bpv   1/1     Running       0          4m6s
+nginx-deployment-75ffc6d4d-tmhp6   1/1     Running       0          6m2s
+nginx-deployment-75ffc6d4d-txqv6   1/1     Terminating   0          14m
+[ec2-user@ip-10-0-0-112 Course_EKS-Basics]$ kubectl get nodes
+NAME                             STATUS                        ROLES    AGE     VERSION
+ip-192-168-2-46.ec2.internal     NotReady,SchedulingDisabled   <none>   31m     v1.19.6-eks-49a6c0
+ip-192-168-24-250.ec2.internal   NotReady,SchedulingDisabled   <none>   31m     v1.19.6-eks-49a6c0
+ip-192-168-36-8.ec2.internal     NotReady,SchedulingDisabled   <none>   31m     v1.19.6-eks-49a6c0
+ip-192-168-38-86.ec2.internal    Ready                         <none>   6m35s   v1.19.6-eks-49a6c0
+ip-192-168-41-16.ec2.internal    Ready                         <none>   3m1s    v1.19.6-eks-49a6c0
+ip-192-168-5-150.ec2.internal    Ready                         <none>   4m54s   v1.19.6-eks-49a6c0
+[ec2-user@ip-10-0-0-112 Course_EKS-Basics]$
+
+
+
+
+

@@ -1,0 +1,1001 @@
+managing Containers 
+
+In this video, we are going to explore some more commands which can be useful for managing docker containers. Here I have a short list of common commands. Docker ps, for example, we've already seen it. That's a command that you can use to get a list of processes. Then there's docker start, stop and restart, which are commands that closely look like system CTL start, stop and restart commands. You can use it to start and stop and restart a container that has the default application set. There's docker kill, docker kill allows you to terminate a container. And docker rm is removing a container and that is to clean up some disc space. So something else that can be useful is to inspect container settings. You will always start with the docker ps commands, which will show the ID's of the containers and you need to pick one. And next you can use docker inspect followed by the ID to figure out what exactly is happening within the container and you will see many parameters. Next here is docker inspect minus minus format equals something and based on the something you can figure out which setting is used for something specific. Like in this case network settings dot IP address on a container name or ID. And another example is where you can find dot state dot pid and dot state dot pid, that's the pid of the container and that can be useful as well, because that should match the pid that is returned by the ps aux commands. So at this point I do have a couple of containers running so it makes sense using docker ps, there we go, two containers running. Notice the docker ps does not show containers that have been started and stopped already. If you want to see containers that have been started and stopped already, you use docker ps minus a. And I wanted to look at this one. This is the container that was started without a specific process. Now, based on either container name or ID, we can use the docker inspect. So if I type docker inspect on my apache, now we see the properties of the my apache container. Notice how we are doing this. You can use an ID, container ID's are kind of difficult to work with, but they are randomly generated and universally unique. And that's important for the container run time. If you don't specify a name for a container docker automatically generates a name for you. And that is very nice, but sometimes a little bit confusing and for that reason it might be wise to always start your containers with a specific name. Now let's get back to the docker inspect to give you a quick overview of all that is available. As you can see settings, a lot of settings. Also interesting, we see where exactly on the system information about a container is stored, var lib docker containers. That's the directory to keep an eye on because that can become quite big. And then we see well, more settings and going through this, you can find all of the different arguments that are used by the container. And there we go here we have the IP address, for example. And here we have the ports that currently are available which is perfectly explaining what's happening. As you can see ports 80 slash DCP host IP zero zero zero, host port 80 80. This is the port mapping that we have created. And you should be able to discover all properties of your container in this way. Now docker inspect is giving a lot of information and because it is giving such a lot of information, it may be useful to use docker inspect minus minus format, followed by a specific parameter that you are looking for, like network settings dot IP. So here we can see what needs to be done to find the IP address for my apache. There we go, 172 17 0 dot 2. Which by the way, is the default docker IP address range. Another useful example is docker inspect. Another dash dash format equals dot state dot pid, on my apache and that is showing pid 24 3 1. Now, why is this relevant? Well, if you use ps aux and we grab on 24 3 1, we can see that that is the httpd process, in fact. And this httpd process is the process that has been started by the container. So as you have seen, docker inspect is quite important. It's allows you to find all properties of your containers and that can be useful.
+
+ So in this lesson, I want to talk about Container Logging. Container logging is interesting because if something goes wrong then you need to be able to figure out what's happening. And that's a skill that you are going to use in the Kubernetes environment as well. The thing is that logs by default are written to the container, and that means that you don't find them on the host operating system. In the second command, which I will show you shortly. I will show you how you can capture the logs from the container and get them in the host operating system. And then you can just use journalctl. But hey, talking about these bullets makes no sense. Let me just demonstrate. So to start with, I'm using docker run, minus rm the minus rm is for remove. That's an interesting switch because by default images are stored and they are just filling up your disc space. If you don't want that to happen use -rm, which will remove the image once you are done. So -v/dev/log : dev/log, which is doing the mount and I want to use fedora, colon latest, which is the latest fedora image. And next we are using logger with a message, message from, FEDORA. I like the uppercase, which makes it easier to find it. And oops you can see I made a typo. It's docker run, not - Rm it is--rm So you can see the docker run that apparently has done something. And now we need to figure out if we can find it. So journalctl by grep FED will do it. Oops, that's a typo that should be journalctl instead of journalct. And there, you can see that on the host operating system I can see my message from FEDORA and this message from FEDORA is really something that's only logged within the container itself. The logging within the container is not very convenient. And by making the bike Mount of the log device from the container to the DevLog device on the host, you can make sure that you capture all the log messages that are generated on the, on the container and that's convenient
+ 
+  In this video I want to answer the question what is Kubernetes? Well Kubernetes is an open source system for automating deployment, scaling and managing of containerized applications. I didn't find that myself, I got it from the Kubernete's main website https://www.@kubernetes.io. The word Kubernetes itself comes from Greek and it means "pilot of the ship". And what ship is that? Well, that's a ship with containers. Because that is what Kubernetes is, a solution for managing containers. And in this entire video course, you will figure out how it works. By using Kubernetes a new way of doing IT is introduced. And let's go to the lightboard so that I can show you what that means. In this video I want to explain why Kubernetes is so convenient. And in order to do so, let's talk about old IT first. So what, how did it work in old IT? While you remember, you had these servers. And if you wanted to run an application, you would install your application on top of your operating system that runs on the server. Nothing wrong with that but the problem is, if your application was used a lot, you needed to scale it up. How did that work? Well, in old IT you took up your phone and you called the hardware guys and told them, hey, I need a new server. And then they went to the hardware manufacturer to buy you a new server and probably six weeks later, you will be able to create a second server. And on the second server you could run your second application and so on. And then you would put a load balancer on top of that through the network or whatever and probably within two months you will be back in business. That's old IT, how does it work in Kubernetes? Well in Kubernetes we have a cluster of Kubernetes notes and it doesn't really matter how many notes you've got in the cluster, let's say you have three notes. And then on top of Kubernetes, you are going to run your container. Let's call it an application because I don't want to confuse you by using inappropriate terminology. So you would run your application and right now your application is offered by this one note. And then the customers are coming and you need to skill up. Well, that's exactly what Kubernetes is supposed to be doing. You can run a new replica of the application of, on your other notes, you can even do that automatically by monitoring capacity and monitoring that a certain threshold has been best. And in order to access the application, at an application level if anything is skilled up you don't care about it because Kubernetes works with this notion of services. And the service basically is a load balancer and you know what happens if you are scaling up your Kubernetes environment, the surface picks up automatically because Kubernetes is using this amazing feature of labels. So whenever you add a new application and even if you wanted to use a million new applications, all these new applications will use the same label. And because of the same label, your service will automatically connect to all of them. And for the end user point of view, what's the difference? Well, the difference is that the end user will get the capacity that users wanna have when working with your IT. Because don't forget the end user is a customer running to your webshop and who wants an answer within a few seconds. This is how Kubernetes is making sure that that is going smoothly. And whenever you are waiting for a WebShop. to pop up again probably you are talking to this. Let's all go here and I'll teach you how.
+  
+In this video, I would like to give you a brief impression of Kubernetes Architecture. So we are using the architecture diagram that comes from the Kubernetes website kubernetes.io which is perfectly explaining all of the components that are involved. So Kubernetes as you know, normally is running in a cluster. And in the cluster, we have multiple nodes. The Kubernetes Master also referred to as a Kubernetes controller or head node and the Kubernetes Minions or worker nodes. Let's call them controller and worker nodes. So the controller node is a node that is directing traffic in the cluster. It's the most important part of the Kubernetes cluster. It's like the brains of Kubernetes. And on a controller node, we have four components. The controller manager, the API server, the scheduler, and the HCD. The API server is the part that makes sure that Cuban Eddie's management clients can talk to Cuban Eddie's. This is where the API is defined and this is where the API is interfaced. So this is basically where the commands come in. And based on the commands that come in, there is a kube-scheduler. The kube-scheduler is the part that pushes the workload to a specific worker node to make sure that it can be executed. Now we have the HCD. The HCD is a simple database. It's a key value store. And we have the kube-controller manager, which is controlling the process. Now you can see in this diagram that there's a cloud involved. And that's for a simple reason that many Kubernetes workloads are used in public clouds like AWS or Azure or Google Cloud. And then we have the Kubernetes Minions or the worker nodes themselves. On these worker nodes, we have two components the kubelet and the kube-proxy. The kubelet is basically the Cuban Eddie's agent. When a Cuban Eddie's scheduler is going to schedule a workload somewhere, it is going to be scheduled on a kubelet. And then there is a cube-proxy The cube proxy is used in the communication to make sure that secure end to end communication can happen through REST by the API server and the local nodes. The kube-proxy terminates the TLS connection and it makes sure that the work is going to happen on the worker node and that the different parts of the Kubernetes cluster are accessible. Now for CKAD This is not an extremely important picture but it does help understanding what the big picture looks like before we are going to look at the details.
+
+this lesson is about setting up a lab environment and we are going to use Minikube, but before we do that, I want to sketch the big picture. So here are the different deployment options. Kubernetes can be deployed in many environments. You can run it in public cloud. All public clouds currently support Kubernetes environments. You can run it on-premise in your own data center and that can be either physical servers or virtual servers. And that's convenient if you don't want to use Kubernetes in a public cloud environment for security reasons, for instance. Doing an on-premise install in a data center can be complicated and there's a lot to consider. So that's not what we are going to do in this class. In this class, we are going to use Minikube. Minikube for testing and developing because it's an easy and convenient way to get started where you have the full experience of a closer and still have everything under your control without being charged by the minute. If you want to learn how to set up a Kubernetes cluster using kubedam you can have a look at my upcoming CKA course. Oh, and there is a couple of online solutions as well. So if you want to do a quick online try without installation you can try, for example, the tryk8s.com solution or one of the other on-line platforms. That is nice if you just want to get a first impression of what Kubernetes has to offer. In order to become a CKAD you really need more than try Kubernetes. You need something that you can run in your own environment and that's Minikube. In the next video, I will show you how to set it up
+
+In this video, I will show you how to install Minikube, because we are going to work in a lab environment that uses Minikube. Obviously you are welcome to use your own lab environment. If you have a Kubernetes environment that is running in public cloud or search, go ahead and use it. But all of my examples are based on the Minikube environment. So what do we need? Well, Minikube offers a complete test environment that runs on Linux, OS-X or Windows, so you can run it directly on top of your own preferred operating system. In this course, we'll use Minikube, as it is easy to set up and there's no further dependencies and we are going to install it in a Fedora virtual machine. Apart from that, we need the kubectl client on the management platform as well. In order to set up the lab environment, I am providing a script, and this script is setting up Minikube on top of Fedora. I've only tested the script on Fedora. So use the latest version of Fedora if you want to run my script. You can get access to the script through my GitHub repository. Use the command git clone https://github.com/ sandervanvugt/ckad. I am demonstrating this based on Fedora Workstation 30. If by the time you are using this, a newer version is available, that should work as well. I intend to make sure that the kube setup script is compatible with newer versions as well. This kube set up script will set up Minikube, as well as the kubectl client. And that is to make it easy for you, as I was mentioning. If you want to run Minikube on top of something else, you can also follow the manual procedure that is described in the rest of this lesson. Before we are starting this installation, I want to make a quick sketch of what the configuration looks like. So in this video, I want to give a quick explanation of the configuration that we are using, the working environment that is. So I am on my Mac OS, and on top of my Mac OS, I'm running VMware Fusion myself. And in VMware fusion, I have installed my Fedora machine. So if this is my Fedora 30, the fun thing is that within the Fedora 30, we are going to install virtual box. And on top of the virtual box, we are running the Minikube virtual machine. That's what we call embedded virtualization. And if you think, hey, isn't embedded virtualization bad for performance? Of course it is, but this is not a production environment, this is a demo environment, so it should be doing good enough. I have provided my script, so my kube setup, is running in the Fedora environment. It only works in a Fedora virtual machine that's been developed to be used in that environment. But if you think, hey Sander, I don't like that. I wanna go for a different approach. Well, that's possible because on top of Mac OS, you can also run Minikube. That's a procedure that I have decided not to show you in this class because not everybody is using Mac OS and I don't want to create a 20 different videos telling you how to install a Minikube on Mac OS, on Windows, on CentOS, on Red Hat, on Fedora, on Ubuntu, I think you get the idea. So this is what we are going to do. Let's do it. Alright, so this is my Fedora virtual machine. Let's quickly explore the properties. I've installed a virtual machine with eight gigabytes of RAM, the more the merrier. So if you have sufficient amount of RAM, give it eight gigabytes, it will do on four gigabytes, it can run on two gigabytes as well, but it will be relatively slow. So four gigabytes is minimum. I've configured the system with a 40 gigabyte hard drive, which has given me 35 gigabytes in the root volume, and that's good enough. Also, and this is important for the embedded virtualization, there is virtualization support that is required. So you can verify that by typing grep VMX on proc CPU info. It should give you the VMX flag, and if it does, now you have a virtualization support and you will be good. So, as I've mentioned, I have my GitHub repository, and you should use it to make it easy on yourself. So first you need to install the git client of course. All right, so let me use git clone https://github.com sandervanvugt, ckad. And that will clone to ckad directory in a current directory of this user user. So in the ckad directory, you will find everything that we are going to need in this class, including the kube set up dot SH script. That is a script, by the way, that does require root privileges. So let me open a root cell again. And from there, let's have a look at the script. So here you can see the script. I should update this verified on Fedora 30, 39 is a little bit too much. I just want to give you a quick impression of what this is doing. So we need virtual box to be installed. And in order to do that, we need access to a virtual box repository. As of now, virtual box 5.2 is needed for the setup, so that is what we are going to install next. I'm using a DNF clean all, and a DNF upgrade, which is upgrading all packages. Do note that will take some significant time. And then the next part is where we are going to install a virtual box, virtual box in daemon mode. So a virtual box daemon will be available in the system providing the virtualization. And then it's installing the Kubernetes client, which is in a package, most distributions just offer a package that contains Kubernetes client. And next, we are going to download Minikube. The download procedure for Minikube is similar to many other things that are happening in Kubernetes environments. You are directly fetching the file from Google apis.com. Make sure that you are fetching the latest that will always give you the latest version. And the result is that you have the binary, the Minikube binary, downloaded to the local directory. And from the local directory, you make it executable, your copy, or even move it to user local bin in the path. I have written the script in a way that the script then stops and prompts that you need to manually reboot your machine. I don't like to do that automatically, of course it's possible to do it automatically, but to make sure that no bad things are happening, the script is asking you to do that. And then you manually need to run a vbox config and Minikube start. So I'm going to start the script now. And again, it'll take some time before we get to the moment that it will prompt for the reboot. So I am going to run Kube setup.sh And here we go. All right, well, at this point, we need to reboot as instructed by the script. And after the reboot, we need to use a vbox config to further configure kernel drivers that are used by virtual box. And then we can start Minikube using Minikube start. Before we can do that, let's reboot. So here we are ready to continue. First thing we need to do is vbox config. So I'm using sudo vbox config, because from now on, I don't really need a root shell anymore, but vbox config doesn't require root privileges. And now it's time for the last step, Minikube start. So I'm typing Minikube start, and then a lot of work is going to happen. So we can see it's downloading Minikube V 140. Notice that versions of Minikube change rapidly. So by the time that you are learning this, you are probably using a more recent version of the Minikube. You can be. You can see it's downloading a Minikube ISO, and then it's going to start a Minikube ISO, and the very first time you are starting Minikube, that will take awhile. Count on anything between five and 10 minutes, approximately. So be patient, you will be ready to get started in not too much time. While this is finishing, let's get back to the slides so that I can explain how to set up a Minikube environment manually. So if you want to go through the manual procedure, you will start by installing kubectl manually, and there are different ways that you can use to install it. You can install it from your cloud specific client. So if you are in Google cloud, just open the Google cloud shell, and from there use kubectl. You can also compile it from source or use it directly from the release binaries or use a kubernetes client package from your Linux distribution. I would advise you use either the first or the last option. The options in the middle are way too complicated. Once the kubectl client is installed, you can start the installation of Minikube. The reason you install kubectl before you install Minikube, is when Minikube is installed and it finds a kubectl client, it will create a configuration and automatically connect to your Minikube instance, and that's convenient. Now, in order to install Minikube, you can use virtual box. Minikube runs on top of a hypervisor. Virtual box is common, but it's not the only hypervisor. So if you want to run it on KVM, that's possible. Within that case, please consult the online documentation because I cannot explain all the different options. For the installation of virtual box, there's a couple of dependencies. That's the GCC echelon dependencies, which are required to add the drivers that a virtual box is using to the Linux kernel. You must enable CPU virtualization support. That is typically something that you will do in the bios of your computer or in the properties of your virtualization client program. Next, you need vbox config to be configured because that is going to compel the virtual box drivers into your learning kernel. As we have already seen, you can also make it easy to yourself and use the kube setup script that is provided in the GitHub repository. But assuming that you want to do it yourself after setting up the virtual box layer, you can download Minikube, using the curl command that is right here. Notice that even if it is wrapped over three lines, this is one command. Once you have downloaded the file, you can continue. And that means you are going to make Minikube executable, chmod plus X will do that. Next, you move Minikube to user local bin so that you have it in your local path. And then you can use Minikube start, and notice that this may take over 15 minutes to complete, depending on the speed of your internet connection, of course. Once Minikube is started, you can use kubectl cluster-info to get information and kubectl get nodes, and that should bring you somewhere. Let's go check out what this looks like on our Minikube installation. So as you can see, it's (indistinct) done. Kubectl is now configured to use Minikube, let's verify. First thing I want to do is kubectl cluster info, which is showing information about the current cluster. And this is exactly what I want to see. I see a Kubernetes master is running at specific IP address. The 192.168.99.100 is the default IP address of the Minikube node. We have a kube DNS and to further debug, no, not now, let's just do a kubectl get nodes. And kubectl get nodes is telling us that the master node is ready and that's exactly what I needed. Now in Minikube, there are a couple of commands that can be used. In fact, Minikube dash dash help will show you everything that it accepts as a command line argument, but that's specific about the Minikube environment. So to be honest, most of the things that we see in this list are not really important. The most important things, Minikube stop, which will stop it, Minikube start, which will start it, Minikube status, which will give status, Minikube delete, if ever you want to start from scratch. And we will shortly see Minikube dashboards as well. But for now I want to focus on something else, and that is Minikube SSH. If you use Minikube SSH, the Minikube is opening an SSH session to the Minikube node, and this Minikube node is an interesting node of course. Three minus M is showing that the Minikube node is using two gigabytes of RAM, that's all, and of these two gigabytes of RAM, it has used 531 megabytes, so that's not much. The interesting thing is that if you type docker ps, now you see a lot of Docker processes. Kubernetes consists of multiple components, including the API server, the scheduler, the controller manager, and the fun thing is that all of them are started as containers. Containers are running on top of the docker platform that is presented within the Minikube environment. And that means that you can find these containers using Docker ps or using ps aux, maybe ps aux grep docker to see the docker commands. And these docker commands are useful because they are giving insights in how exactly the Minikube environment is running. And this is definitely a place you want to get back once you have a good generic understanding of kubernetes and everything that is happening, because so many things are happening as a container in the background.
+
+
+
+
+
+home/docker/httpd on  master [🤷‍] on ☁️  (us-east-1)
+➜  docker ps
+CONTAINER ID   IMAGE     COMMAND              CREATED         STATUS         PORTS                  NAMES
+bd6189cc2afe   httpd     "httpd-foreground"   7 minutes ago   Up 7 minutes   0.0.0.0:8080->80/tcp   myApache2.0
+
+home/docker/httpd on  master [🤷‍] on ☁️  (us-east-1)
+➜
+
+home/docker/httpd on  master [🤷‍] on ☁️  (us-east-1)
+➜
+
+home/docker/httpd on  master [🤷‍] on ☁️  (us-east-1)
+➜  ss -tunap
+zsh: command not found: ss
+
+home/docker/httpd on  master [🤷‍] on ☁️  (us-east-1)
+[💣 127] ✗  netstat -an | grep docker
+afc39f0dca773193 stream      0      0                0 afc39f0dca773af3                0                0 docker-api.sock
+afc39f0dca773963 stream      0      0                0 afc39f0dca77389b                0                0 /Users/swamysivasubramaniyan/Library/Containers/com.docker.docker/Data/docker.raw.sock
+afc39f0dca773003 stream      0      0                0 afc39f0dca77370b                0                0 /Users/swamysivasubramaniyan/Library/Containers/com.docker.docker/Data/filesystem-event.sock
+afc39f0dca77438b stream      0      0                0 afc39f0dca772063                0                0 /Users/swamysivasubramaniyan/Library/Containers/com.docker.docker/Data/docker.raw.sock
+afc39f0dca7742c3 stream      0      0                0 afc39f0dca77212b                0                0 /Users/swamysivasubramaniyan/Library/Containers/com.docker.docker/Data/docker.raw.sock
+afc39f0dca7722bb stream      0      0                0 afc39f0dca774133                0                0 /Users/swamysivasubramaniyan/Library/Containers/com.docker.docker/Data/docker.raw.sock
+afc39f0dca77406b stream      0      0                0 afc39f0dca773fa3                0                0 /Users/swamysivasubramaniyan/Library/Containers/com.docker.docker/Data/docker.raw.sock
+afc39f0dca773edb stream      0      0                0 afc39f0dca772383                0                0 /Users/swamysivasubramaniyan/Library/Containers/com.docker.docker/Data/docker.raw.sock
+afc39f0dca77244b stream      0      0 afc39f0daf42fd93                0                0                0 /Users/swamysivasubramaniyan/Library/Containers/com.docker.docker/Data/docker.raw.sock
+afc39f0dca77276b stream      0      0                0 afc39f0dca7728fb                0                0 /Users/swamysivasubramaniyan/Library/Containers/com.docker.docker/Data/lifecycle-server.sock
+afc39f0dca773bbb stream      0      0 afc39f0db5c02a93                0                0                0 /Users/swamysivasubramaniyan/Library/Containers/com.docker.docker/Data/filesystem-event.sock
+afc39f0dca772a8b stream      0      0 afc39f0db7451293                0                0                0 /Users/swamysivasubramaniyan/Library/Containers/com.docker.docker/Data/mutagen.sock
+afc39f0dca772b53 stream      0      0 afc39f0db99ad493                0                0                0 /Users/swamysivasubramaniyan/Library/Containers/com.docker.docker/Data/filesystem-test.sock
+afc39f0dca772c1b stream      0      0 afc39f0db7faaf93                0                0                0 /Users/swamysivasubramaniyan/Library/Containers/com.docker.docker/Data/lifecycle-server.sock
+afc39f0dca772e73 stream      0      0                0 afc39f0dca772f3b                0                0 /Users/swamysivasubramaniyan/Library/Containers/com.docker.docker/Data/vms/0/00000002.00001003
+afc39f0dca7733eb stream      0      0 afc39f0db2556993                0                0                0 /Users/swamysivasubramaniyan/Library/Containers/com.docker.docker/Data/diagnosticd.sock
+afc39f0dca7737d3 stream      0      0 afc39f0db28c5b93                0                0                0 /Users/swamysivasubramaniyan/Library/Containers/com.docker.docker/Data/debug-shell.sock
+afc39f0dca773643 stream      0      0                0 afc39f0dca77357b                0                0 /Users/swamysivasubramaniyan/Library/Containers/com.docker.docker/Data/memlogdq.sock
+afc39f0dca769bbb stream      0      0 afc39f0dba3c4c93                0                0                0 /Users/swamysivasubramaniyan/Library/Containers/com.docker.docker/Data/memlogdq.sock
+afc39f0dca76a773 stream      0      0                0 afc39f0dca767893                0                0 /Users/swamysivasubramaniyan/Library/Containers/com.docker.docker/Data/vms/0/00000002.000007cf
+afc39f0dca7734b3 stream      0      0 afc39f0db823b693                0                0                0 /Users/swamysivasubramaniyan/.docker/run/docker-cli-api.sock
+afc39f0dca767c7b stream      0      0                0 afc39f0dca76a453                0                0 docker-api.sock
+afc39f0dca76a38b stream      0      0                0 afc39f0dca76a2c3                0                0 docker-api.sock
+afc39f0dca767d43 stream      0      0                0 afc39f0dca76a1fb                0                0 docker-api.sock
+afc39f0dca76a133 stream      0      0                0 afc39f0dca76a06b                0                0 docker-api.sock
+afc39f0dca769fa3 stream      0      0                0 afc39f0dca769edb                0                0 docker-api.sock
+afc39f0dca76812b stream      0      0                0 afc39f0dca7681f3                0                0 docker-api.sock
+afc39f0dca7682bb stream      0      0                0 afc39f0dca76844b                0                0 docker-api.sock
+afc39f0dca768383 stream      0      0                0 afc39f0dca7685db                0                0 docker-api.sock
+afc39f0dca76876b stream      0      0 afc39f0db6fd1593                0                0                0 docker.sock
+afc39f0dca769323 stream      0      0 afc39f0dbc5ca693                0                0                0 /Users/swamysivasubramaniyan/Library/Containers/com.docker.docker/Data/vms/0/00000002.00001003
+afc39f0dca768a8b stream      0      0                0 afc39f0dca76957b                0                0 docker-api.sock
+afc39f0dca76925b stream      0      0 afc39f0dbe762293                0                0                0 docker-cli.sock
+afc39f0dca768f3b stream      0      0 afc39f0dbe762093                0                0                0 docker-api.sock
+afc39f0d9fc764b3 stream      0      0 afc39f0da0125e93                0                0                0 /var/run/com.docker.vmnetd.sock
+
+home/docker/httpd on  master [🤷‍] on ☁️  (us-east-1)
+➜  netstat -an | grep 8080
+tcp46      0      0  *.8080                 *.*                    LISTEN
+tcp4       0      0  192.168.8.149.53528    192.168.8.230.8080     ESTABLISHED
+
+home/docker/httpd on  master [🤷‍] on ☁️  (us-east-1)
+➜  brew install ss
+Updating Homebrew...
+==> Auto-updated Homebrew!
+Updated 4 taps (homebrew/core, homebrew/cask, tetratelabs/getenvoy and aws/tap).
+==> New Formulae
+kertish-dfs                                                        zlib-ng
+==> Updated Formulae
+Updated 68 formulae.
+==> New Casks
+plasticscm-cloud-edition                                           volanta
+==> Updated Casks
+Updated 28 casks.
+==> Deleted Casks
+mist
+
+==> Searching for similarly named formulae...
+These similarly named formulae were found:
+abyss                                        htmlcompressor                               ppsspp
+arss                                         huexpress                                    progress
+assh                                         imessage-ruby                                pssh
+assimp                                       ios-class-guard                              pympress
+atlassian-cli                                ios-sim                                      rssh
+autossh                                      irssi                                        rsstail
+aws-sdk-cpp                                  jansson                                      s-search
+aws-shell                                    jboss-forge                                  sagittarius-scheme
+aws/tap/aws-sam-cli ✔                        jdnssec-tools                                sassc
+aws/tap/aws-sam-cli-rc                       keepassc                                     serverless
+aws/tap/aws-simple-ec2-cli                   kubeless                                     spirv-cross
+brightness                                   kubernetes-service-catalog-client            ssdb
+briss                                        lasso                                        ssdeep
+cassandra                                    lastpass-cli                                 ssed
+cassandra-cpp-driver                         less                                         ssh-audit
+cassandra-reaper                             lesspipe                                     ssh-copy-id
+cassandra@2.1                                lesstif                                      ssh-permit-a38
+cassandra@2.2                                libass ✔                                     ssh-vault
+cassowary                                    libassuan                                    sshfs
+cdogs-sdl                                    libdvdcss                                    sshguard
+ceres-solver                                 libmrss                                      sshtrix
+cfssl                                        libpciaccess                                 sshuttle
+classads                                     libressl                                     ssldump
+crosstool-ng                                 libsass                                      sslh
+css-crush                                    libssh                                       ssllabs-scan
+cssembed                                     libssh2                                      sslmate
+csshx                                        masscan                                      sslscan
+cyrus-sasl                                   massdns                                      sslsplit
+dssim                                        massren                                      sslyze
+eless                                        mpssh                                        ssreflect
+faiss                                        mussh                                        ssss
+fossil                                       nats-server                                  sstp-client
+freeradius-server                            nats-streaming-server                        stormssh
+giflossy                                     ncompress                                    stormssh-completion
+git-ssh                                      node-sass                                    stress
+gitless                                      nss                                          stress-ng
+glassfish                                    openssh                                      tass64
+glib-openssl                                 openssl@1.1 ✔                                tesseract ✔
+gnome-themes-standard                        osslsigncode                                 tesseract-lang
+gnu-chess                                    ossp-uuid                                    testssl
+goaccess                                     pandoc-crossref                              thors-serializer
+gopass                                       pass                                         transmission-cli
+gopass-jsonapi                               pass-git-helper                              vassh
+gssdp                                        pass-otp                                     vitess
+gssh                                         passenger                                    wifi-password
+gtmess                                       passpie                                      wolfssl
+homeassistant-cli                            passwdqc                                     yuicompressor
+hostess                                      pipes-sh                                     zssh
+hss                                          ppss
+To install one of them, run (for example):
+  brew install abyss
+Error: No available formula or cask with the name "ss".
+==> Searching for a previously deleted formula (in the last month)...
+Error: No previously deleted formula found.
+==> Searching taps on GitHub...
+Error: No formulae found in taps.
+
+home/docker/httpd on  master [🤷‍] on ☁️  (us-east-1) took 19s
+[💣 1] ✗  docker -it --name myBusybox busybox
+unknown shorthand flag: 'i' in -it
+See 'docker --help'.
+
+Usage:  docker [OPTIONS] COMMAND
+
+A self-sufficient runtime for containers
+
+Options:
+      --config string      Location of client config files (default "/Users/swamysivasubramaniyan/.docker")
+  -c, --context string     Name of the context to use to connect to the daemon (overrides DOCKER_HOST env var and default
+                           context set with "docker context use")
+  -D, --debug              Enable debug mode
+  -H, --host list          Daemon socket(s) to connect to
+  -l, --log-level string   Set the logging level ("debug"|"info"|"warn"|"error"|"fatal") (default "info")
+      --tls                Use TLS; implied by --tlsverify
+      --tlscacert string   Trust certs signed only by this CA (default "/Users/swamysivasubramaniyan/.docker/ca.pem")
+      --tlscert string     Path to TLS certificate file (default "/Users/swamysivasubramaniyan/.docker/cert.pem")
+      --tlskey string      Path to TLS key file (default "/Users/swamysivasubramaniyan/.docker/key.pem")
+      --tlsverify          Use TLS and verify the remote
+  -v, --version            Print version information and quit
+
+Management Commands:
+  app*        Docker App (Docker Inc., v0.9.1-beta3)
+  builder     Manage builds
+  buildx*     Build with BuildKit (Docker Inc., v0.5.1-docker)
+  config      Manage Docker configs
+  container   Manage containers
+  context     Manage contexts
+  image       Manage images
+  manifest    Manage Docker image manifests and manifest lists
+  network     Manage networks
+  node        Manage Swarm nodes
+  plugin      Manage plugins
+  scan*       Docker Scan (Docker Inc., v0.5.0)
+  secret      Manage Docker secrets
+  service     Manage services
+  stack       Manage Docker stacks
+  swarm       Manage Swarm
+  system      Manage Docker
+  trust       Manage trust on Docker images
+  volume      Manage volumes
+
+Commands:
+  attach      Attach local standard input, output, and error streams to a running container
+  build       Build an image from a Dockerfile
+  commit      Create a new image from a container's changes
+  cp          Copy files/folders between a container and the local filesystem
+  create      Create a new container
+  diff        Inspect changes to files or directories on a container's filesystem
+  events      Get real time events from the server
+  exec        Run a command in a running container
+  export      Export a container's filesystem as a tar archive
+  history     Show the history of an image
+  images      List images
+  import      Import the contents from a tarball to create a filesystem image
+  info        Display system-wide information
+  inspect     Return low-level information on Docker objects
+  kill        Kill one or more running containers
+  load        Load an image from a tar archive or STDIN
+  login       Log in to a Docker registry
+  logout      Log out from a Docker registry
+  logs        Fetch the logs of a container
+  pause       Pause all processes within one or more containers
+  port        List port mappings or a specific mapping for the container
+  ps          List containers
+  pull        Pull an image or a repository from a registry
+  push        Push an image or a repository to a registry
+  rename      Rename a container
+  restart     Restart one or more containers
+  rm          Remove one or more containers
+  rmi         Remove one or more images
+  run         Run a command in a new container
+  save        Save one or more images to a tar archive (streamed to STDOUT by default)
+  search      Search the Docker Hub for images
+  start       Start one or more stopped containers
+  stats       Display a live stream of container(s) resource usage statistics
+  stop        Stop one or more running containers
+  tag         Create a tag TARGET_IMAGE that refers to SOURCE_IMAGE
+  top         Display the running processes of a container
+  unpause     Unpause all processes within one or more containers
+  update      Update configuration of one or more containers
+  version     Show the Docker version information
+  wait        Block until one or more containers stop, then print their exit codes
+
+Run 'docker COMMAND --help' for more information on a command.
+
+To get more help with docker, check out our guides at https://docs.docker.com/go/guides/
+
+
+home/docker/httpd on  master [🤷‍] on ☁️  (us-east-1)
+[💣 125] ✗  docker run -it --name myBusybox busybox
+Unable to find image 'busybox:latest' locally
+latest: Pulling from library/busybox
+8b3d7e226fab: Pull complete
+Digest: sha256:ce2360d5189a033012fbad1635e037be86f23b65cfd676b436d0931af390a2ac
+Status: Downloaded newer image for busybox:latest
+/ # pwd
+/
+/ # ls -alh
+total 44K
+drwxr-xr-x    1 root     root        4.0K Mar 18 19:04 .
+drwxr-xr-x    1 root     root        4.0K Mar 18 19:04 ..
+-rwxr-xr-x    1 root     root           0 Mar 18 19:04 .dockerenv
+drwxr-xr-x    2 root     root       12.0K Mar  9 19:16 bin
+drwxr-xr-x    5 root     root         360 Mar 18 19:04 dev
+drwxr-xr-x    1 root     root        4.0K Mar 18 19:04 etc
+drwxr-xr-x    2 nobody   nobody      4.0K Mar  9 19:16 home
+dr-xr-xr-x  128 root     root           0 Mar 18 19:04 proc
+drwx------    1 root     root        4.0K Mar 18 19:04 root
+dr-xr-xr-x   13 root     root           0 Mar 18 19:04 sys
+drwxrwxrwt    2 root     root        4.0K Mar  9 19:16 tmp
+drwxr-xr-x    3 root     root        4.0K Mar  9 19:16 usr
+drwxr-xr-x    4 root     root        4.0K Mar  9 19:16 var
+/ # %
+
+home/docker/httpd on  master [🤷‍] on ☁️  (us-east-1) took 2m32s
+➜  docker ps
+CONTAINER ID   IMAGE     COMMAND              CREATED          STATUS          PORTS                  NAMES
+da16192258ad   busybox   "sh"                 3 minutes ago    Up 3 minutes                           myBusybox
+bd6189cc2afe   httpd     "httpd-foreground"   16 minutes ago   Up 16 minutes   0.0.0.0:8080->80/tcp   myApache2.0
+
+home/docker/httpd on  master [🤷‍] on ☁️  (us-east-1)
+➜  ps aux
+USER               PID  %CPU %MEM      VSZ    RSS   TT  STAT STARTED      TIME COMMAND
+_windowserver      136  55.1  0.4 13324308 130280   ??  Rs   Tue01PM 180:45.00 /System/Library/PrivateFrameworks/SkyLight.framework/
+swamysivasubramaniyan  1484   7.1  1.1  7548796 366304   ??  R    Tue02PM  37:10.35 /Applications/iTerm.app/Contents/MacOS/iTerm2
+swamysivasubramaniyan   653   5.8  0.3  7196492 107564   ??  S    Tue01PM  50:13.03 /Applications/Google Chrome.app/Contents/Frameworks/G
+swamysivasubramaniyan 23488   5.6  1.5 48179412 488436   ??  S    11:57AM   3:44.83 /Applications/Google Chrome.app/Contents/Frameworks/G
+swamysivasubramaniyan  1181   4.2  1.7  8922628 560376   ??  S    Tue01PM  30:44.51 /Applications/eM Client.app/Contents/MacOS/eM Client
+swamysivasubramaniyan 22835   2.4  1.0 47950156 349296   ??  S    10:00AM  11:02.79 /Applications/Google Chrome.app/Contents/Frameworks/G
+swamysivasubramaniyan   550   1.6  1.9  7946812 652372   ??  S    Tue01PM  32:19.46 /Applications/Google Chrome.app/Contents/MacOS/Google
+swamysivasubramaniyan  4163   1.5  0.8 44000040 273832   ??  S    Tue07PM   8:54.66 /Applications/Google Chrome.app/Contents/Frameworks/G
+swamysivasubramaniyan 23824   1.3  0.8 13449384 280592   ??  S    12:35PM   1:12.76 com.docker.hyperkit -A -u -F vms/0/hyperkit.pid -c 4
+swamysivasubramaniyan   654   1.1  0.2  5755028  67040   ??  S    Tue01PM  13:04.19 /Applications/Google Chrome.app/Contents/Frameworks/G
+_coreaudiod        224   1.1  0.0  4834400   9000   ??  Ss   Tue01PM   6:42.12 /usr/sbin/coreaudiod
+swamysivasubramaniyan   658   0.8  0.1  5565036  29784   ??  Ss   Tue01PM   5:24.98 /System/Library/Frameworks/VideoToolbox.framework/Ver
+swamysivasubramaniyan   540   0.6  0.2  6521468  75092   ??  S    Tue01PM   2:22.79 /Applications/Box.app/Contents/MacOS/Box
+swamysivasubramaniyan   516   0.6  0.3  6309464  86784   ??  S    Tue01PM  17:33.11 /Applications/Jira.app/Contents/MacOS/Jira
+swamysivasubramaniyan 21944   0.5  0.8 43962400 265712   ??  S     8:44AM   2:41.49 /Applications/Google Chrome.app/Contents/Frameworks/G
+swamysivasubramaniyan  1004   0.5  0.1  5322404  21716   ??  S    Tue01PM   2:30.64 /Applications/Google Chrome.app/Contents/Frameworks/G
+swamysivasubramaniyan   398   0.4  0.0  5486392  12268   ??  S    Tue01PM   0:36.50 /usr/libexec/pkd
+swamysivasubramaniyan   405   0.4  0.1  6419628  45244   ??  S    Tue01PM  17:08.82 /System/Library/CoreServices/NotificationCenter.app/C
+swamysivasubramaniyan   533   0.3  1.4 11205880 469704   ??  S    Tue01PM  20:32.79 /Applications/Microsoft Outlook.app/Contents/MacOS/Mi
+swamysivasubramaniyan 23006   0.3  0.6 43650992 186576   ??  S    10:27AM   0:48.20 /Applications/Google Chrome.app/Contents/Frameworks/G
+_driverkit         299   0.2  0.0  4806892   1620   ??  Ss   Tue01PM   9:37.57 /System/Library/DriverExtensions/com.apple.AppleUserH
+swamysivasubramaniyan   463   0.2  0.0  5714836  14472   ??  S    Tue01PM   0:12.40 /System/Library/CoreServices/Siri.app/Contents/MacOS/
+root               129   0.1  0.0  5482248  10320   ??  Ss   Tue01PM   1:51.77 /usr/sbin/bluetoothd
+_driverkit         305   0.1  0.0  4814580   1668   ??  Ss   Tue01PM   3:28.96 /System/Library/DriverExtensions/com.apple.AppleUserH
+swamysivasubramaniyan  3186   0.1  0.0  4596636   2148 s002  S    Tue06PM   0:00.42 -zsh
+swamysivasubramaniyan 26160   0.1  0.0  4784648  12200   ??  S     1:08PM   0:00.04 /System/Library/Frameworks/CoreServices.framework/Fra
+_mysql             124   0.1  0.0  5652656  12536   ??  Ss   Tue01PM   8:46.62 /usr/local/mysql/bin/mysqld --user=_mysql --basedir=/
+root               177   0.1  0.0  5479944  10560   ??  Ss   Tue01PM   2:01.30 /usr/libexec/runningboardd
+swamysivasubramaniyan 12256   0.1  0.4 43654092 119848   ??  S     2:16PM   0:53.07 /Applications/Google Chrome.app/Contents/Frameworks/G
+swamysivasubramaniyan 24857   0.1  0.9 43661612 293824   ??  S     1:00PM   0:05.00 /Applications/Google Chrome.app/Contents/Frameworks/G
+swamysivasubramaniyan   677   0.1  0.2 43549032  58924   ??  S    Tue01PM   0:44.48 /Applications/Google Chrome.app/Contents/Frameworks/G
+swamysivasubramaniyan   501   0.1  0.0  4531228   3416   ??  S    Tue01PM   0:06.90 /System/Library/Frameworks/ApplicationServices.framew
+swamysivasubramaniyan  3314   0.1  0.5 43655984 175400   ??  S    Tue06PM   1:08.29 /Applications/Google Chrome.app/Contents/Frameworks/G
+swamysivasubramaniyan 22626   0.0  0.1  5533756  29840   ??  S     9:42AM   0:02.43 /usr/libexec/studentd
+swamysivasubramaniyan 22420   0.0  0.6 43655180 191164   ??  S     9:18AM   0:10.88 /Applications/Google Chrome.app/Contents/Frameworks/G
+swamysivasubramaniyan 22419   0.0  0.2 43417756  75600   ??  S     9:18AM   0:01.07 /Applications/Google Chrome.app/Contents/Frameworks/G
+swamysivasubramaniyan 22417   0.0  0.2 43547492  80920   ??  S     9:18AM   0:01.25 /Applications/Google Chrome.app/Contents/Frameworks/G
+swamysivasubramaniyan 22415   0.0  0.2 43549936  83328   ??  S     9:18AM   0:01.20 /Applications/Google Chrome.app/Contents/Frameworks/G
+swamysivasubramaniyan 22412   0.0  0.3 43553936  93764   ??  S     9:18AM   0:02.29 /Applications/Google Chrome.app/Contents/Frameworks/G
+swamysivasubramaniyan 22173   0.0  0.3 43594728 115588   ??  S     8:59AM   0:05.56 /Applications/Google Chrome.app/Contents/Frameworks/G
+swamysivasubramaniyan 22171   0.0  0.3 43663624  86340   ??  S     8:59AM   0:11.09 /Applications/Google Chrome.app/Contents/Frameworks/G
+swamysivasubramaniyan 22058   0.0  0.3 43573420  85476   ??  S     8:56AM   0:08.20 /Applications/Google Chrome.app/Contents/Frameworks/G
+_driverkit       21845   0.0  0.0  4822772   2176   ??  Ss    8:42AM   0:00.77 /System/Library/DriverExtensions/com.apple.AppleUserH
+swamysivasubramaniyan 21841   0.0  0.1  5490612  17936   ??  S     8:26AM   0:00.51 /usr/libexec/remindd
+root             21772   0.0  0.1  5354604  21808   ??  Ss    8:06AM   0:04.11 /usr/libexec/PerfPowerServices
+root             21464   0.0  0.0  5217164   5148   ??  Ss    6:27AM   0:00.37 /usr/libexec/sandboxd
+swamysivasubramaniyan 18199   0.0  0.0  6108660  12040   ??  S    11:03PM   0:00.26 /System/Library/CoreServices/CoreServicesUIAgent.app/
+swamysivasubramaniyan 18198   0.0  0.0  4682160   7228   ??  Ss   11:03PM   0:00.06 /System/Library/PrivateFrameworks/AssistantServices.f
+_spotlight       18197   0.0  0.0  4785320   4240   ??  S    11:03PM   0:00.10 /System/Library/Frameworks/CoreServices.framework/Fra
+_fpsd            18176   0.0  0.0  5121100    708   ??  S    11:03PM   0:00.06 /usr/sbin/distnoted agent
+swamysivasubramaniyan 17399   0.0  0.0  5218564   1808   ??  Ss    6:59PM   0:00.04 /System/Library/Frameworks/Metal.framework/Versions/A
+swamysivasubramaniyan 17398   0.0  0.0  5383808   2216   ??  Ss    6:59PM   0:00.05 /System/Library/Frameworks/Metal.framework/Versions/A
+swamysivasubramaniyan 17397   0.0  0.0  5397960  11780   ??  Ss    6:59PM   0:00.53 /Applications/Box.app/Contents/PlugIns/FinderSyncExt.
+swamysivasubramaniyan 17396   0.0  0.0  5165244  10068   ??  Ss    6:59PM   0:00.21 /System/Library/Frameworks/Quartz.framework/Versions/
+swamysivasubramaniyan 17395   0.0  0.1  6064068  28648   ??  Ss    6:59PM   0:12.58 /System/Library/Frameworks/AppKit.framework/Versions/
+swamysivasubramaniyan 17388   0.0  0.0  5247236   1788   ??  Ss    6:58PM   0:00.06 /System/Library/Frameworks/Metal.framework/Versions/A
+swamysivasubramaniyan 17387   0.0  0.0  5664384   2104   ??  Ss    6:58PM   0:00.06 /System/Library/Frameworks/Metal.framework/Versions/A
+swamysivasubramaniyan 17386   0.0  0.0  5889740  16116   ??  Ss    6:58PM   0:00.49 /System/Library/Frameworks/Quartz.framework/Versions/
+swamysivasubramaniyan 16470   0.0  0.0  5247668  10428   ??  Ss    5:13PM   0:04.23 /Applications/Backup and Sync.app/Contents/PlugIns/Fi
+swamysivasubramaniyan 16469   0.0  0.0  5232928  10060   ??  Ss    5:13PM   0:00.25 /Users/swamysivasubramaniyan/Library/Application Supp
+swamysivasubramaniyan 16468   0.0  0.0  5528508  11664   ??  Ss    5:13PM   0:00.45 /Applications/Box.app/Contents/PlugIns/FinderSyncExt.
+swamysivasubramaniyan 16357   0.0  0.0  4596356   1052 s005  S+    5:02PM   0:00.10 -zsh
+root             16356   0.0  0.0  4530476   4956 s005  Ss    5:02PM   0:00.04 /usr/bin/login -fpl swamysivasubramaniyan /Applicatio
+swamysivasubramaniyan 16125   0.0  0.0  5102368  10032   ??  Ss    4:37PM   0:00.26 /Users/swamysivasubramaniyan/Library/Application Supp
+swamysivasubramaniyan 16124   0.0  0.0  5528508  11664   ??  Ss    4:37PM   0:00.47 /Applications/Box.app/Contents/PlugIns/FinderSyncExt.
+swamysivasubramaniyan 15827   0.0  0.0  4971296  10108   ??  Ss    4:22PM   0:00.27 /Users/swamysivasubramaniyan/Library/Application Supp
+swamysivasubramaniyan 15825   0.0  0.0  5528508  11628   ??  Ss    4:22PM   0:00.47 /Applications/Box.app/Contents/PlugIns/FinderSyncExt.
+swamysivasubramaniyan 15653   0.0  0.0  4596356   1056 s004  S+    4:14PM   0:00.12 -zsh
+root             15652   0.0  0.0  4504876   4956 s004  Ss    4:14PM   0:00.03 /usr/bin/login -fpl swamysivasubramaniyan /Applicatio
+swamysivasubramaniyan 15617   0.0  0.0  4971296  10128   ??  Ss    4:08PM   0:00.27 /Users/swamysivasubramaniyan/Library/Application Supp
+swamysivasubramaniyan 15615   0.0  0.0  5528508  11632   ??  Ss    4:08PM   0:00.47 /Applications/Box.app/Contents/PlugIns/FinderSyncExt.
+swamysivasubramaniyan 15298   0.0  0.0  4465284   1588 s003  S+    3:44PM   0:00.09 -zsh
+root             15297   0.0  0.0  4514092   4956 s003  Ss    3:44PM   0:00.03 /usr/bin/login -fpl swamysivasubramaniyan /Applicatio
+swamysivasubramaniyan 15290   0.0  0.0  5232928  10052   ??  Ss    3:42PM   0:00.27 /Users/swamysivasubramaniyan/Library/Application Supp
+swamysivasubramaniyan 15289   0.0  0.0  5528508  11612   ??  Ss    3:42PM   0:00.47 /Applications/Box.app/Contents/PlugIns/FinderSyncExt.
+swamysivasubramaniyan 15102   0.0  0.0  4971296  10068   ??  Ss    3:18PM   0:00.28 /Users/swamysivasubramaniyan/Library/Application Supp
+swamysivasubramaniyan 15101   0.0  0.0  5528508  11644   ??  Ss    3:18PM   0:00.50 /Applications/Box.app/Contents/PlugIns/FinderSyncExt.
+swamysivasubramaniyan 14976   0.0  0.0  4777656   4128   ??  S     2:59PM   0:00.04 /System/Library/Frameworks/CoreServices.framework/Fra
+swamysivasubramaniyan 12498   0.0  0.0  4971296   9992   ??  Ss    2:46PM   0:00.28 /Users/swamysivasubramaniyan/Library/Application Supp
+swamysivasubramaniyan 12496   0.0  0.0  5528508  11636   ??  Ss    2:46PM   0:00.48 /Applications/Box.app/Contents/PlugIns/FinderSyncExt.
+swamysivasubramaniyan 12388   0.0  0.0  4837528   9488   ??  Ss    2:31PM   0:00.27 /Applications/Backup and Sync.app/Contents/PlugIns/Fi
+swamysivasubramaniyan 12387   0.0  0.0  5102368  10040   ??  Ss    2:31PM   0:00.28 /Users/swamysivasubramaniyan/Library/Application Supp
+swamysivasubramaniyan 12386   0.0  0.0  5528508  11616   ??  Ss    2:31PM   0:00.45 /Applications/Box.app/Contents/PlugIns/FinderSyncExt.
+swamysivasubramaniyan 12381   0.0  0.0  5102368  10044   ??  Ss    2:31PM   0:00.28 /Users/swamysivasubramaniyan/Library/Application Supp
+swamysivasubramaniyan 12379   0.0  0.0  5528508  11644   ??  Ss    2:31PM   0:00.47 /Applications/Box.app/Contents/PlugIns/FinderSyncExt.
+swamysivasubramaniyan 11994   0.0  0.0  4971296  10120   ??  Ss    2:08PM   0:00.29 /Users/swamysivasubramaniyan/Library/Application Supp
+swamysivasubramaniyan 11993   0.0  0.0  4837528   9416   ??  Ss    2:08PM   0:00.27 /Applications/Backup and Sync.app/Contents/PlugIns/Fi
+swamysivasubramaniyan 11992   0.0  0.0  5528508  11652   ??  Ss    2:08PM   0:00.47 /Applications/Box.app/Contents/PlugIns/FinderSyncExt.
+swamysivasubramaniyan 11988   0.0  0.0  4709152  10080   ??  Ss    2:07PM   0:00.28 /Users/swamysivasubramaniyan/Library/Application Supp
+swamysivasubramaniyan 11987   0.0  0.0  5528508  11644   ??  Ss    2:07PM   0:00.48 /Applications/Box.app/Contents/PlugIns/FinderSyncExt.
+swamysivasubramaniyan 11962   0.0  0.0  4839712  10036   ??  Ss    2:03PM   0:00.28 /Users/swamysivasubramaniyan/Library/Application Supp
+swamysivasubramaniyan 11961   0.0  0.0  4706456   9428   ??  Ss    2:03PM   0:00.27 /Applications/Backup and Sync.app/Contents/PlugIns/Fi
+swamysivasubramaniyan 11960   0.0  0.0  5397436  11584   ??  Ss    2:03PM   0:00.47 /Applications/Box.app/Contents/PlugIns/FinderSyncExt.
+swamysivasubramaniyan 11902   0.0  0.0  5910788   1824   ??  Ss    1:56PM   0:00.09 /System/Library/Frameworks/Metal.framework/Versions/A
+swamysivasubramaniyan 11901   0.0  0.0  5673600   2220   ??  Ss    1:56PM   0:00.09 /System/Library/Frameworks/Metal.framework/Versions/A
+swamysivasubramaniyan 11896   0.0  0.0  5529032  11864   ??  Ss    1:55PM   0:00.67 /Applications/Box.app/Contents/PlugIns/FinderSyncExt.
+swamysivasubramaniyan 11895   0.0  0.0  5233440  10072   ??  Ss    1:55PM   0:00.28 /Users/swamysivasubramaniyan/Library/Application Supp
+swamysivasubramaniyan 11893   0.0  0.0  5528508  11668   ??  Ss    1:55PM   0:00.49 /Applications/Box.app/Contents/PlugIns/FinderSyncExt.
+swamysivasubramaniyan 11892   0.0  0.0  5376260   1808   ??  Ss    1:55PM   0:00.05 /System/Library/Frameworks/Metal.framework/Versions/A
+swamysivasubramaniyan 11891   0.0  0.0  5270144   2216   ??  Ss    1:55PM   0:00.06 /System/Library/Frameworks/Metal.framework/Versions/A
+swamysivasubramaniyan 11890   0.0  0.0  5034172  10020   ??  Ss    1:55PM   0:00.38 /System/Library/Frameworks/Quartz.framework/Versions/
+swamysivasubramaniyan 11889   0.0  0.1  6228912  35508   ??  Ss    1:55PM   0:22.75 /System/Library/Frameworks/AppKit.framework/Versions/
+swamysivasubramaniyan 11867   0.0  0.0  4840224  10036   ??  Ss    1:54PM   0:00.29 /Users/swamysivasubramaniyan/Library/Application Supp
+swamysivasubramaniyan 11865   0.0  0.0  5528508  11588   ??  Ss    1:54PM   0:00.49 /Applications/Box.app/Contents/PlugIns/FinderSyncExt.
+swamysivasubramaniyan 11859   0.0  0.0  4971296  10096   ??  Ss    1:53PM   0:00.29 /Users/swamysivasubramaniyan/Library/Application Supp
+swamysivasubramaniyan 11858   0.0  0.0  5528508  11624   ??  Ss    1:53PM   0:00.50 /Applications/Box.app/Contents/PlugIns/FinderSyncExt.
+swamysivasubramaniyan 11463   0.0  0.0  4970784  10012   ??  Ss    1:23PM   0:00.29 /Users/swamysivasubramaniyan/Library/Application Supp
+swamysivasubramaniyan 11461   0.0  0.0  5528508  11584   ??  Ss    1:23PM   0:00.47 /Applications/Box.app/Contents/PlugIns/FinderSyncExt.
+swamysivasubramaniyan 11422   0.0  0.0  4390160   5800   ??  S     1:21PM   0:00.02 /System/Library/PrivateFrameworks/PrintingPrivate.fra
+swamysivasubramaniyan 11419   0.0  0.0  5244164   1772   ??  Ss    1:21PM   0:00.04 /System/Library/Frameworks/Metal.framework/Versions/A
+swamysivasubramaniyan 11418   0.0  0.0  4982400   2100   ??  Ss    1:21PM   0:00.02 /System/Library/Frameworks/Metal.framework/Versions/A
+swamysivasubramaniyan 11417   0.0  0.0  5525120   2124   ??  Ss    1:21PM   0:00.06 /System/Library/Frameworks/Metal.framework/Versions/A
+swamysivasubramaniyan 11416   0.0  0.0  5986372   2036   ??  Ss    1:21PM   0:01.95 /System/Library/Frameworks/Metal.framework/Versions/A
+swamysivasubramaniyan 11258   0.0  0.1 43631340  46320   ??  S    Wed01PM   0:02.57 /Applications/Google Chrome.app/Contents/Frameworks/G
+swamysivasubramaniyan 11256   0.0  0.1 43298684  44912   ??  S    Wed01PM   0:02.54 /Applications/Google Chrome.app/Contents/Frameworks/G
+swamysivasubramaniyan 11252   0.0  0.1 43628920  45272   ??  S    Wed01PM   0:02.25 /Applications/Google Chrome.app/Contents/Frameworks/G
+swamysivasubramaniyan 11248   0.0  0.2 43564024  51028   ??  S    Wed01PM   0:04.17 /Applications/Google Chrome.app/Contents/Frameworks/G
+swamysivasubramaniyan 11234   0.0  0.2 43594072  80312   ??  S    Wed01PM   0:06.09 /Applications/Google Chrome.app/Contents/Frameworks/G
+swamysivasubramaniyan 10261   0.0  0.0  5101856  10060   ??  Ss   Wed10AM   0:00.38 /Users/swamysivasubramaniyan/Library/Application Supp
+swamysivasubramaniyan 10260   0.0  0.0  5527996  11676   ??  Ss   Wed10AM   0:00.61 /Applications/Box.app/Contents/PlugIns/FinderSyncExt.
+swamysivasubramaniyan 10111   0.0  0.0  4970784  10104   ??  Ss   Wed09AM   0:00.37 /Users/swamysivasubramaniyan/Library/Application Supp
+swamysivasubramaniyan 10109   0.0  0.0  5527996  11656   ??  Ss   Wed09AM   0:00.60 /Applications/Box.app/Contents/PlugIns/FinderSyncExt.
+swamysivasubramaniyan 10046   0.0  0.2 43454712  57844   ??  S    Wed09AM   0:10.62 /Applications/Google Chrome.app/Contents/Frameworks/G
+swamysivasubramaniyan  9454   0.0  0.1 43506904  47476   ??  S    Wed08AM   0:02.16 /Applications/Google Chrome.app/Contents/Frameworks/G
+swamysivasubramaniyan  9207   0.0  0.3 43564696  99160   ??  S    Wed08AM   1:09.33 /Applications/Google Chrome.app/Contents/Frameworks/G
+root              8906   0.0  0.0  4504688   1268   ??  Ss   Wed07AM   0:00.02 /System/Library/PrivateFrameworks/Noticeboard.framewo
+swamysivasubramaniyan  8904   0.0  0.0  5533252  12540   ??  S    Wed07AM   0:00.88 /System/Library/PrivateFrameworks/Noticeboard.framewo
+swamysivasubramaniyan  8731   0.0  0.0  4822916   8128   ??  S    Wed07AM   0:00.69 /System/Library/PrivateFrameworks/CoreRecents.framewo
+swamysivasubramaniyan  6472   0.0  0.0  4559440   3300   ??  S    Wed01AM   0:00.02 /System/Library/PrivateFrameworks/IntlPreferences.fra
+swamysivasubramaniyan  6276   0.0  0.0  4391948   4692   ??  S    Wed12AM   0:00.03 /System/Library/PrivateFrameworks/KerberosHelper/Help
+_fpsd             5524   0.0  0.0  4616924   1296   ??  Ss   Tue10PM   0:00.68 /System/Library/PrivateFrameworks/CoreLSKD.framework/
+swamysivasubramaniyan  5523   0.0  0.0  4560232   6428   ??  S    Tue10PM   0:00.12 /System/Library/PrivateFrameworks/IMDPersistence.fram
+swamysivasubramaniyan  5519   0.0  0.0  4694956   6788   ??  Ss   Tue10PM   0:00.57 /System/Library/PrivateFrameworks/IMFoundation.framew
+swamysivasubramaniyan  5518   0.0  0.0  4695744   9484   ??  S    Tue10PM   0:00.19 /System/Library/PrivateFrameworks/CallHistory.framewo
+swamysivasubramaniyan  4701   0.0  0.1 43428628  40792   ??  S    Tue08PM   0:02.13 /Applications/Google Chrome.app/Contents/Frameworks/G
+root              4532   0.0  0.0  4358848   1360   ??  Ss   Tue08PM   0:00.01 /usr/libexec/applessdstatistics
+swamysivasubramaniyan  4300   0.0  0.0  4971496   9968   ??  Ss   Tue07PM   0:00.84 /System/Library/PrivateFrameworks/RemoteViewServices.
+swamysivasubramaniyan  4290   0.0  0.0  5397448  11776   ??  Ss   Tue07PM   0:01.23 /Applications/Box.app/Contents/PlugIns/FinderSyncExt.
+swamysivasubramaniyan  4288   0.0  0.0  5364000  10124   ??  Ss   Tue07PM   0:00.62 /Users/swamysivasubramaniyan/Library/Application Supp
+swamysivasubramaniyan  4287   0.0  0.0  5527996  11720   ??  Ss   Tue07PM   0:00.91 /Applications/Box.app/Contents/PlugIns/FinderSyncExt.
+swamysivasubramaniyan  4286   0.0  0.0  5164732  10076   ??  Ss   Tue07PM   0:00.69 /System/Library/Frameworks/Quartz.framework/Versions/
+swamysivasubramaniyan  4285   0.0  0.1  6153732  23692   ??  Ss   Tue07PM   0:02.73 /System/Library/Frameworks/AppKit.framework/Versions/
+swamysivasubramaniyan  4279   0.0  0.0  5235000  12720   ??  Ss   Tue07PM   0:01.19 /Users/swamysivasubramaniyan/Library/Application Supp
+swamysivasubramaniyan  4273   0.0  0.0  5187412   3576   ??  S    Tue07PM   0:00.09 /System/Library/Frameworks/ApplicationServices.framew
+swamysivasubramaniyan  4258   0.0  0.0  4970784  10092   ??  Ss   Tue07PM   0:00.59 /Users/swamysivasubramaniyan/Library/Application Supp
+swamysivasubramaniyan  4257   0.0  0.0  5509300  10488   ??  Ss   Tue07PM   0:14.80 /Applications/Backup and Sync.app/Contents/PlugIns/Fi
+swamysivasubramaniyan  4256   0.0  0.0  5528520  11840   ??  Ss   Tue07PM   0:01.31 /Applications/Box.app/Contents/PlugIns/FinderSyncExt.
+swamysivasubramaniyan  4253   0.0  0.0  5528520  11880   ??  Ss   Tue07PM   0:01.24 /Applications/Box.app/Contents/PlugIns/FinderSyncExt.
+swamysivasubramaniyan  4252   0.0  0.0  5164732  10064   ??  Ss   Tue07PM   0:00.67 /System/Library/Frameworks/Quartz.framework/Versions/
+swamysivasubramaniyan  4251   0.0  0.1  6164160  23708   ??  Ss   Tue07PM   0:01.72 /System/Library/Frameworks/AppKit.framework/Versions/
+swamysivasubramaniyan  4244   0.0  0.0  5498168  12612   ??  Ss   Tue07PM   0:01.17 /Users/swamysivasubramaniyan/Library/Application Supp
+swamysivasubramaniyan  4243   0.0  0.0  5528520  11860   ??  Ss   Tue07PM   0:01.30 /Applications/Box.app/Contents/PlugIns/FinderSyncExt.
+swamysivasubramaniyan  4241   0.0  0.4  8340848 138864   ??  S    Tue07PM   0:47.95 /Applications/Microsoft Excel.app/Contents/MacOS/Micr
+swamysivasubramaniyan  4238   0.0  0.4  8516068 126292   ??  S    Tue07PM   0:25.31 /Applications/Microsoft Word.app/Contents/MacOS/Micro
+swamysivasubramaniyan  4207   0.0  0.3 44015508 116132   ??  S    Tue07PM   0:20.32 /Applications/Google Chrome.app/Contents/Frameworks/G
+swamysivasubramaniyan  4153   0.0  0.2 43871228  54204   ??  S    Tue07PM   0:49.91 /Applications/Google Chrome.app/Contents/Frameworks/G
+swamysivasubramaniyan  4133   0.0  0.0  4924104   7500   ??  S    Tue07PM   0:00.10 /System/Library/PrivateFrameworks/CommerceKit.framewo
+root              4130   0.0  0.0  4383496   2712   ??  Ss   Tue07PM   0:00.02 /usr/libexec/tzd
+swamysivasubramaniyan  4129   0.0  0.0  4400300   2988   ??  Ss   Tue07PM   0:00.06 /System/Library/PrivateFrameworks/FMClient.framework/
+root              4127   0.0  0.0  4514272   1280   ??  Ss   Tue07PM   0:00.03 /usr/libexec/mobileactivationd
+swamysivasubramaniyan  4126   0.0  0.0  4382864   1696   ??  S    Tue07PM   0:00.01 /System/Library/PrivateFrameworks/DeviceCheckInternal
+swamysivasubramaniyan  4120   0.0  0.0  4587368   9668   ??  Ss   Tue07PM   0:00.19 /System/Library/PrivateFrameworks/AssistantServices.f
+swamysivasubramaniyan  4101   0.0  0.0  4559580   8164   ??  Ss   Tue07PM   0:00.07 /System/Applications/Mail.app/Contents/PlugIns/MailCa
+root              4099   0.0  0.0  4561028   3188   ??  Ss   Tue07PM   0:00.04 /usr/bin/sysdiagnose
+root              4098   0.0  0.0  5477404   8600   ??  Ss   Tue07PM   0:00.31 /System/Library/PrivateFrameworks/CloudKitDaemon.fram
+swamysivasubramaniyan  4094   0.0  0.0  5484152   9660   ??  S    Tue07PM   0:00.75 /usr/libexec/transparencyd
+swamysivasubramaniyan  4085   0.0  0.0  4792464   7256   ??  S    Tue07PM   0:00.05 /System/Library/CoreServices/EscrowSecurityAlert.app/
+root              4020   0.0  0.0  4340348    388   ??  SNs  Tue07PM   0:00.01 /usr/libexec/periodic-wrapper daily
+swamysivasubramaniyan  3991   0.0  0.2 43857068  52908   ??  S    Tue07PM   0:05.19 /Applications/Google Chrome.app/Contents/Frameworks/G
+swamysivasubramaniyan  3979   0.0  0.2 43567740  61596   ??  S    Tue07PM   0:12.10 /Applications/Google Chrome.app/Contents/Frameworks/G
+swamysivasubramaniyan  3968   0.0  0.2 43859988  53484   ??  S    Tue07PM   0:05.24 /Applications/Google Chrome.app/Contents/Frameworks/G
+swamysivasubramaniyan  3960   0.0  0.2 43730644  53104   ??  S    Tue07PM   0:04.48 /Applications/Google Chrome.app/Contents/Frameworks/G
+swamysivasubramaniyan  3958   0.0  0.2 43862580  53780   ??  S    Tue07PM   0:05.23 /Applications/Google Chrome.app/Contents/Frameworks/G
+swamysivasubramaniyan  3954   0.0  0.2 43567636  61584   ??  S    Tue07PM   0:09.24 /Applications/Google Chrome.app/Contents/Frameworks/G
+root              3939   0.0  0.0  4767988   2104   ??  Ss   Tue07PM   0:00.02 /System/Library/CoreServices/iconservicesagent runAsR
+root              3937   0.0  0.0  4694912   5820   ??  Ss   Tue07PM   0:21.75 /System/Library/PrivateFrameworks/StorageKit.framewor
+swamysivasubramaniyan  3860   0.0  0.2 43800936  71180   ??  S    Tue07PM   0:12.56 /Applications/Google Chrome.app/Contents/Frameworks/G
+swamysivasubramaniyan  3845   0.0  0.2 47831952  62304   ??  S    Tue07PM   0:06.25 /Applications/Google Chrome.app/Contents/Frameworks/G
+swamysivasubramaniyan  3817   0.0  0.0  5101856  10040   ??  Ss   Tue07PM   0:00.62 /Users/swamysivasubramaniyan/Library/Application Supp
+swamysivasubramaniyan  3815   0.0  0.0  5527996  11776   ??  Ss   Tue07PM   0:00.89 /Applications/Box.app/Contents/PlugIns/FinderSyncExt.
+swamysivasubramaniyan  3403   0.0  0.2 43892364  55248   ??  S    Tue06PM   0:47.66 /Applications/Google Chrome.app/Contents/Frameworks/G
+swamysivasubramaniyan  3374   0.0  0.2 43923408  59600   ??  S    Tue06PM   0:25.16 /Applications/Google Chrome.app/Contents/Frameworks/G
+swamysivasubramaniyan  3287   0.0  0.0  5528520  11856   ??  Ss   Tue06PM   0:01.34 /Applications/Box.app/Contents/PlugIns/FinderSyncExt.
+swamysivasubramaniyan  3286   0.0  0.0  4823196   3940   ??  S    Tue06PM   0:00.05 /System/Library/Frameworks/CoreServices.framework/Fra
+swamysivasubramaniyan  3285   0.0  0.2  6613708  65888   ??  S    Tue06PM   0:23.24 /System/Applications/Preview.app/Contents/MacOS/Previ
+swamysivasubramaniyan  3282   0.0  0.0  4697436   6796   ??  S    Tue06PM   0:00.06 /System/Library/PrivateFrameworks/AMPLibrary.framewor
+swamysivasubramaniyan  3281   0.0  0.0  4382312   2384   ??  Ss   Tue06PM   0:00.01 /System/Library/Frameworks/AudioToolbox.framework/XPC
+swamysivasubramaniyan  3280   0.0  0.0  5224312   7964   ??  S    Tue06PM   0:00.12 /System/Library/PrivateFrameworks/BookKit.framework/V
+swamysivasubramaniyan  3279   0.0  0.0  4958712   5776   ??  S    Tue06PM   0:00.13 /System/Library/PrivateFrameworks/PodcastServices.fra
+root              3185   0.0  0.0  4505900   4956 s002  Ss   Tue06PM   0:00.02 /usr/bin/login -fpl swamysivasubramaniyan /Applicatio
+swamysivasubramaniyan  3122   0.0  0.0  4580252   1200 s001  S+   Tue06PM   0:00.12 -zsh
+root              3121   0.0  0.0  4512044   4956 s001  Ss   Tue06PM   0:00.05 /usr/bin/login -fpl swamysivasubramaniyan /Applicatio
+swamysivasubramaniyan  3047   0.0  0.0  5528520  11880   ??  Ss   Tue05PM   0:01.36 /Applications/Box.app/Contents/PlugIns/FinderSyncExt.
+swamysivasubramaniyan  3045   0.0  0.0  4970784  10084   ??  Ss   Tue05PM   0:00.64 /Users/swamysivasubramaniyan/Library/Application Supp
+swamysivasubramaniyan  3044   0.0  0.0  5527996  11716   ??  Ss   Tue05PM   0:00.94 /Applications/Box.app/Contents/PlugIns/FinderSyncExt.
+swamysivasubramaniyan  3043   0.0  0.0  5164732  10036   ??  Ss   Tue05PM   0:00.82 /System/Library/Frameworks/Quartz.framework/Versions/
+swamysivasubramaniyan  3042   0.0  0.1  6250084  39280   ??  Ss   Tue05PM   0:24.03 /System/Library/Frameworks/AppKit.framework/Versions/
+swamysivasubramaniyan  2731   0.0  0.0  5386500   1812   ??  Ss   Tue05PM   0:00.24 /System/Library/Frameworks/Metal.framework/Versions/A
+swamysivasubramaniyan  2730   0.0  0.0  5261952   2124   ??  Ss   Tue05PM   0:00.09 /System/Library/Frameworks/Metal.framework/Versions/A
+swamysivasubramaniyan  2721   0.0  0.1  4969640  31916   ??  Ss   Tue05PM   0:00.25 /System/iOSSupport/System/Library/Frameworks/WebKit.f
+swamysivasubramaniyan  2720   0.0  0.1 90479044  35644   ??  Ss   Tue05PM   0:00.59 /System/iOSSupport/System/Library/Frameworks/WebKit.f
+swamysivasubramaniyan  2619   0.0  0.0  5452380  11880   ??  S    Tue05PM   0:00.90 /System/Library/CoreServices/OSDUIHelper.app/Contents
+root              2398   0.0  0.0  5477136   3324   ??  Ss   Tue05PM   0:00.32 /System/Library/Frameworks/AudioToolbox.framework/XPC
+root              2261   0.0  0.0  4559504   4476   ??  Ss   Tue04PM   0:00.06 /System/Library/PrivateFrameworks/DifferentialPrivacy
+swamysivasubramaniyan  2014   0.0  0.0  5354000   7324   ??  Ss   Tue03PM   0:00.92 /System/Library/PrivateFrameworks/IMFoundation.framew
+root              1983   0.0  0.0  4559360   3744   ??  Ss   Tue03PM   0:00.04 /usr/libexec/microstackshot
+swamysivasubramaniyan  1881   0.0  0.0  4382364   1556   ??  S    Tue03PM   0:00.01 /System/Library/Frameworks/CoreServices.framework/Ver
+swamysivasubramaniyan  1745   0.0  0.0  5990132  16504   ??  Ss   Tue02PM   0:07.12 /System/Applications/Photos.app/Contents/PlugIns/Phot
+swamysivasubramaniyan  1744   0.0  0.1  5964920  34436   ??  Ss   Tue02PM   0:34.93 /System/Library/CoreServices/Clock.app/Contents/PlugI
+swamysivasubramaniyan  1739   0.0  0.0  4923992   2516   ??  S    Tue02PM   0:00.07 /usr/libexec/USBAgent
+swamysivasubramaniyan  1657   0.0  0.0  4293880   1344   ??  S    Tue02PM   0:00.02 /usr/bin/ssh-agent -l
+swamysivasubramaniyan  1635   0.0  0.1  5488744  19096   ??  S    Tue02PM   0:53.01 /System/Library/PrivateFrameworks/ContactsDonation.fr
+swamysivasubramaniyan  1534   0.0  0.0  5161920   9224   ??  S    Tue02PM   0:00.98 /usr/libexec/adservicesd
+swamysivasubramaniyan  1528   0.0  0.0  5428692  15456   ??  S    Tue02PM   0:02.24 /usr/libexec/promotedcontentd
+swamysivasubramaniyan  1527   0.0  0.6  7692564 203224   ??  S    Tue02PM  23:46.86 /System/Applications/Stocks.app/Contents/MacOS/Stocks
+root              1491   0.0  0.0  5381764   3700   ??  Ss   Tue02PM   0:00.83 /usr/libexec/taskgated
+swamysivasubramaniyan  1489   0.0  0.0  4400768   2264   ??  Ss   Tue02PM   0:00.78 /Applications/iTerm.app/Contents/XPCServices/pidinfo.
+swamysivasubramaniyan  1487   0.0  0.0  4465284   1000 s000  S+   Tue02PM   0:00.14 -zsh
+root              1486   0.0  0.0  4522284   4900 s000  Ss   Tue02PM   0:00.05 /usr/bin/login -fpl swamysivasubramaniyan /Applicatio
+swamysivasubramaniyan  1485   0.0  0.0  5226064   1404   ??  S    Tue02PM   0:00.02 /Users/swamysivasubramaniyan/Library/Application Supp
+swamysivasubramaniyan  1474   0.0  0.1  6643956  43120   ??  S    Tue02PM   1:40.81 /Applications/TextMate.app/Contents/MacOS/TextMate
+swamysivasubramaniyan  1413   0.0  0.0  5266376  11932   ??  Ss   Tue02PM   0:01.45 /Applications/Box.app/Contents/PlugIns/FinderSyncExt.
+swamysivasubramaniyan  1412   0.0  0.0  4839712  10168   ??  Ss   Tue02PM   0:00.71 /Users/swamysivasubramaniyan/Library/Application Supp
+swamysivasubramaniyan  1410   0.0  0.0  5265852  11708   ??  Ss   Tue02PM   0:00.99 /Applications/Box.app/Contents/PlugIns/FinderSyncExt.
+swamysivasubramaniyan  1409   0.0  0.0  5164732  10064   ??  Ss   Tue02PM   0:00.88 /System/Library/Frameworks/Quartz.framework/Versions/
+swamysivasubramaniyan  1408   0.0  0.1  6230776  28276   ??  Ss   Tue02PM   0:04.37 /System/Library/Frameworks/AppKit.framework/Versions/
+_windowserver     1238   0.0  0.0  5647620   1836   ??  Ss   Tue01PM   0:00.08 /System/Library/Frameworks/Metal.framework/Versions/A
+_windowserver     1237   0.0  0.0  5384816   2108   ??  Ss   Tue01PM   0:00.06 /System/Library/Frameworks/Metal.framework/Versions/A
+swamysivasubramaniyan  1220   0.0  0.0  5510248  12476   ??  Ss   Tue01PM   0:00.80 /System/Library/PrivateFrameworks/AssetViewer.framewo
+swamysivasubramaniyan  1218   0.0  0.0  5243140   1796   ??  Ss   Tue01PM   0:00.05 /System/Library/Frameworks/Metal.framework/Versions/A
+swamysivasubramaniyan  1217   0.0  0.0  5409408   2204   ??  Ss   Tue01PM   0:00.08 /System/Library/Frameworks/Metal.framework/Versions/A
+swamysivasubramaniyan  1212   0.0  0.0  5266376  11812   ??  Ss   Tue01PM   0:01.42 /Applications/Box.app/Contents/PlugIns/FinderSyncExt.
+swamysivasubramaniyan  1211   0.0  0.0  4839712  10124   ??  Ss   Tue01PM   0:00.71 /Users/swamysivasubramaniyan/Library/Application Supp
+swamysivasubramaniyan  1209   0.0  0.0  5527996  11688   ??  Ss   Tue01PM   0:00.99 /Applications/Box.app/Contents/PlugIns/FinderSyncExt.
+swamysivasubramaniyan  1207   0.0  0.0  5164732   9972   ??  Ss   Tue01PM   0:00.89 /System/Library/Frameworks/Quartz.framework/Versions/
+swamysivasubramaniyan  1206   0.0  0.1  6232812  30904   ??  Ss   Tue01PM   0:05.40 /System/Library/Frameworks/AppKit.framework/Versions/
+swamysivasubramaniyan  1192   0.0  0.0  5085444   1828   ??  Ss   Tue01PM   0:00.06 /System/Library/Frameworks/Metal.framework/Versions/A
+swamysivasubramaniyan  1191   0.0  0.0  5402240   2204   ??  Ss   Tue01PM   0:00.03 /System/Library/Frameworks/Metal.framework/Versions/A
+swamysivasubramaniyan  1174   0.0  0.1 106591276  17508   ??  Ss   Tue01PM   0:00.58 /System/Library/Frameworks/WebKit.framework/Versions/
+swamysivasubramaniyan  1173   0.0  0.0  5426752   8972   ??  Ss   Tue01PM   0:00.61 /System/Library/CoreServices/Dock.app/Contents/XPCSer
+swamysivasubramaniyan  1169   0.0  0.0  5247156  10540   ??  Ss   Tue01PM   0:18.19 /Applications/Backup and Sync.app/Contents/PlugIns/Fi
+swamysivasubramaniyan  1168   0.0  0.0  4970784  10124   ??  Ss   Tue01PM   0:00.68 /Users/swamysivasubramaniyan/Library/Application Supp
+swamysivasubramaniyan  1167   0.0  0.0  5528520  11912   ??  Ss   Tue01PM   0:01.45 /Applications/Box.app/Contents/PlugIns/FinderSyncExt.
+swamysivasubramaniyan  1162   0.0  0.0  5295804   9984   ??  Ss   Tue01PM   0:00.88 /System/Library/Frameworks/Quartz.framework/Versions/
+swamysivasubramaniyan  1160   0.0  0.1  6149960  23464   ??  Ss   Tue01PM   0:02.30 /System/Library/Frameworks/AppKit.framework/Versions/
+swamysivasubramaniyan  1159   0.0  0.0  5188008   9224   ??  Ss   Tue01PM   0:00.25 /Applications/Safari.app/Contents/XPCServices/com.app
+_nsurlsessiond    1158   0.0  0.0  5083316   2212   ??  Ss   Tue01PM   0:00.07 /System/Library/PrivateFrameworks/StreamingZip.framew
+_assetcache       1157   0.0  0.0  5349416   6908   ??  Ss   Tue01PM   0:00.56 /System/Library/PrivateFrameworks/AssetCacheServices.
+swamysivasubramaniyan  1156   0.0  0.0  5166740   9316   ??  S    Tue01PM   0:00.64 /Library/Developer/PrivateFrameworks/CoreSimulator.fr
+swamysivasubramaniyan  1155   0.0  0.0  5499544   7968   ??  S    Tue01PM   0:35.72 /System/Library/PrivateFrameworks/SafariSafeBrowsing.
+swamysivasubramaniyan  1154   0.0  0.0  5185832   4004   ??  S    Tue01PM   0:00.08 /Library/Apple/System/Library/CoreServices/SafariSupp
+swamysivasubramaniyan  1153   0.0  0.0  4392240   1848   ??  S    Tue01PM   0:00.03 /Library/Developer/PrivateFrameworks/CoreSimulator.fr
+swamysivasubramaniyan  1152   0.0  0.0  5298508  10408   ??  S    Tue01PM   0:01.28 /Library/Developer/PrivateFrameworks/CoreSimulator.fr
+swamysivasubramaniyan  1151   0.0  0.0  5084388   7528   ??  S    Tue01PM   0:13.51 /Library/Apple/System/Library/CoreServices/SafariSupp
+swamysivasubramaniyan  1150   0.0  0.0  5084416   9296   ??  S    Tue01PM   0:00.08 /Library/Apple/System/Library/CoreServices/SafariSupp
+swamysivasubramaniyan  1149   0.0  0.0  5427044  13764   ??  Ss   Tue01PM   0:00.91 /Applications/Safari.app/Contents/XPCServices/com.app
+swamysivasubramaniyan  1148   0.0  0.0  4718424   8332   ??  S    Tue01PM   0:00.09 /System/Library/PrivateFrameworks/Translation.framewo
+swamysivasubramaniyan  1147   0.0  0.0  5645572   1832   ??  Ss   Tue01PM   0:00.10 /System/Library/Frameworks/Metal.framework/Versions/A
+swamysivasubramaniyan  1146   0.0  0.0  5542528   2096   ??  Ss   Tue01PM   0:00.10 /System/Library/Frameworks/Metal.framework/Versions/A
+swamysivasubramaniyan  1140   0.0  0.0  5689068  13332   ??  Ss   Tue01PM   0:00.97 /Applications/Okta Extension App.app/Contents/PlugIns
+swamysivasubramaniyan  1139   0.0  0.0  4927632   2920   ??  Ss   Tue01PM   0:00.08 /System/Library/Frameworks/ImageIO.framework/Versions
+swamysivasubramaniyan  1138   0.0  0.0  5167228  13508   ??  Ss   Tue01PM   0:00.93 /Users/swamysivasubramaniyan/Library/Application Supp
+swamysivasubramaniyan  1137   0.0  0.0  5512148   9856   ??  Ss   Tue01PM   0:04.24 /System/Library/Frameworks/WebKit.framework/Versions/
+swamysivasubramaniyan  1134   0.0  0.0  5496716   9372   ??  S    Tue01PM   0:01.18 /System/Library/PrivateFrameworks/SafariShared.framew
+swamysivasubramaniyan  1133   0.0  0.1  7283612  39056   ??  S    Tue01PM   0:21.01 /Applications/Safari.app/Contents/MacOS/Safari
+root              1131   0.0  0.0  5479288   4864   ??  Ss   Tue01PM   0:00.88 /System/Library/PrivateFrameworks/XprotectFramework.f
+root              1128   0.0  0.0  4529996   2980   ??  S    Tue01PM   0:00.03 /System/Library/PrivateFrameworks/PackageKit.framewor
+swamysivasubramaniyan  1114   0.0  0.0  4690324   9096   ??  Ss   Tue01PM   0:00.08 /System/Applications/Music.app/Contents/PlugIns/Music
+swamysivasubramaniyan  1113   0.0  0.0  4692504  10488   ??  Ss   Tue01PM   0:00.18 /Applications/Safari.app/Contents/PlugIns/CacheDelete
+swamysivasubramaniyan  1112   0.0  0.1  5882876  35124   ??  Ss   Tue01PM   0:05.92 /Applications/Xcode.app/Contents/PlugIns/IDECacheDele
+swamysivasubramaniyan  1111   0.0  0.0  4559252   9064   ??  Ss   Tue01PM   0:00.07 /System/Applications/TV.app/Contents/PlugIns/TVCacheE
+root              1109   0.0  0.0  4399232   3356   ??  Ss   Tue01PM   0:00.03 /System/Library/PrivateFrameworks/PackageKit.framewor
+root              1108   0.0  0.0  5215020   5172   ??  Ss   Tue01PM   0:00.16 /usr/libexec/symptomsd-diag
+swamysivasubramaniyan  1107   0.0  0.0  4794776   5760   ??  S    Tue01PM   0:00.10 /System/Library/PrivateFrameworks/CommerceKit.framewo
+root              1106   0.0  0.0  5480704   5492   ??  Ss   Tue01PM   0:15.17 /System/Library/PrivateFrameworks/PackageKit.framewor
+root              1105   0.0  0.0  4953224   2900   ??  Ss   Tue01PM   0:00.17 /usr/libexec/aned
+swamysivasubramaniyan  1104   0.0  0.0  4924424   5764   ??  S    Tue01PM   0:00.08 /usr/libexec/replayd
+root              1103   0.0  0.0  4399740   1672   ??  Ss   Tue01PM   0:00.07 /System/Library/PrivateFrameworks/CacheDelete.framewo
+swamysivasubramaniyan  1102   0.0  0.0  4381372   1216   ??  Ss   Tue01PM   0:00.01 /System/Library/Frameworks/NetFS.framework/Versions/A
+swamysivasubramaniyan  1073   0.0  0.1  5219540  33548   ??  S    Tue01PM   0:00.20 /System/iOSSupport/System/Library/PrivateFrameworks/A
+swamysivasubramaniyan  1071   0.0  0.0  5224796  11736   ??  S    Tue01PM   0:01.02 /System/Library/PrivateFrameworks/PassKitCore.framewo
+swamysivasubramaniyan  1067   0.0  0.0  5350308   9236   ??  S    Tue01PM   0:00.77 /System/Library/PrivateFrameworks/iCloudNotification.
+swamysivasubramaniyan  1047   0.0  0.0  4947028   3852   ??  S    Tue01PM   0:00.24 /System/Library/Frameworks/ApplicationServices.framew
+swamysivasubramaniyan  1006   0.0  0.0  4374884   2356   ??  Ss   Tue01PM   0:00.01 /System/Library/Frameworks/AudioToolbox.framework/XPC
+root               981   0.0  0.0  5089844   8144   ??  Ss   Tue01PM   0:04.50 /usr/libexec/dprivacyd
+swamysivasubramaniyan   966   0.0  0.0  5277312   2364   ??  Ss   Tue01PM   0:00.26 /System/Library/Frameworks/Metal.framework/Versions/A
+swamysivasubramaniyan   876   0.0  0.0  4979108   4528   ??  Ss   Tue01PM   0:00.13 /System/Library/Frameworks/VideoToolbox.framework/Ver
+swamysivasubramaniyan   875   0.0  0.0  5352492   8112   ??  Ss   Tue01PM   0:00.37 /System/Library/PrivateFrameworks/MediaConversionServ
+swamysivasubramaniyan   862   0.0  0.0  5119372  10820   ??  Ss   Tue01PM   0:17.86 /Applications/Backup and Sync.app/Contents/PlugIns/Fi
+root               844   0.0  0.0  4364972   1048   ??  Ss   Tue01PM   0:00.01 /usr/libexec/online-authd
+swamysivasubramaniyan   843   0.0  0.0  5349692  12972   ??  S    Tue01PM   0:14.11 /Library/Apple/System/Library/CoreServices/SafariSupp
+swamysivasubramaniyan   838   0.0  0.0  5135304  12044   ??  Ss   Tue01PM   0:01.40 /Applications/Box.app/Contents/PlugIns/FinderSyncExt.
+swamysivasubramaniyan   832   0.0  0.0  5236024  12660   ??  Ss   Tue01PM   0:01.32 /Users/swamysivasubramaniyan/Library/Application Supp
+swamysivasubramaniyan   817   0.0  0.0  4823100   6224   ??  S    Tue01PM   0:02.04 /System/Library/PrivateFrameworks/CacheDelete.framewo
+swamysivasubramaniyan   800   0.0  0.0  4691428   7516   ??  S    Tue01PM   0:00.51 /usr/libexec/siriknowledged
+_spotlight         784   0.0  0.0  4506544   2324   ??  S    Tue01PM   0:00.05 /usr/libexec/containermanagerd --runmode=agent --bund
+swamysivasubramaniyan   778   0.0  0.0  4924976   2580   ??  S    Tue01PM   0:00.22 /System/Library/CoreServices/ScopedBookmarkAgent
+root               776   0.0  0.0  4358500   1140   ??  Ss   Tue01PM   0:00.01 /usr/libexec/smd
+root               770   0.0  0.0  4383488   2676   ??  Ss   Tue01PM   0:00.01 /System/Library/CoreServices/ReportCrash daemon
+swamysivasubramaniyan   765   0.0  0.0  5821944  13820   ??  Ss   Tue01PM   0:04.35 /System/Library/CoreServices/Siri.app/Contents/XPCSer
+swamysivasubramaniyan   762   0.0  0.1  5517792  41444   ??  S    Tue01PM   0:38.92 /System/Library/PrivateFrameworks/AssistantServices.f
+swamysivasubramaniyan   760   0.0  0.0  4391528   2364   ??  Ss   Tue01PM   0:00.01 /System/Library/Frameworks/AudioToolbox.framework/XPC
+swamysivasubramaniyan   758   0.0  0.0  5483112  10512   ??  S    Tue01PM   0:01.15 /usr/libexec/adprivacyd
+swamysivasubramaniyan   735   0.0  0.0  5636520   6084   ??  S    Tue01PM   0:16.51 /System/Library/PrivateFrameworks/ContextKit.framewor
+swamysivasubramaniyan   734   0.0  0.0  5479208   7072   ??  Ss   Tue01PM   0:00.75 /System/Library/PrivateFrameworks/Categories.framewor
+swamysivasubramaniyan   733   0.0  0.0  5489108  10120   ??  S    Tue01PM   0:02.34 /System/Library/CoreServices/mapspushd
+swamysivasubramaniyan   730   0.0  0.0  5870292  12392   ??  S    Tue01PM   0:03.69 /System/Library/CoreServices/LocationMenu.app/Content
+swamysivasubramaniyan   729   0.0  0.0  5477496   8888   ??  S    Tue01PM   0:01.52 /System/Library/CoreServices/navd
+_spotlight         728   0.0  0.0  5348000   8992   ??  S    Tue01PM   0:01.27 /usr/libexec/trustd --agent
+_spotlight         727   0.0  0.0  5094544   4960   ??  S    Tue01PM   0:00.15 /usr/libexec/pkd
+_spotlight         725   0.0  0.0  5489868  15212   ??  SN   Tue01PM   0:05.22 /System/Library/Frameworks/CoreServices.framework/Fra
+swamysivasubramaniyan   724   0.0  0.0  5488996  15364   ??  SN   Tue01PM   0:05.50 /System/Library/Frameworks/CoreServices.framework/Fra
+_fpsd              721   0.0  0.0  4531832   3740   ??  Ss   Tue01PM   0:00.07 /System/Library/PrivateFrameworks/CoreFP.framework/Ve
+root               720   0.0  0.0  5486204   7916   ??  Ss   Tue01PM   0:01.42 /usr/libexec/rtcreportingd
+swamysivasubramaniyan   719   0.0  0.0  5349496   7004   ??  S    Tue01PM   0:00.16 /System/Library/Frameworks/ClassKit.framework/Version
+swamysivasubramaniyan   718   0.0  0.2  6150072  56884   ??  Ss   Tue01PM  18:39.89 /System/Applications/Calendar.app/Contents/PlugIns/Ca
+swamysivasubramaniyan   717   0.0  0.1  6346656  21884   ??  Ss   Tue01PM   0:11.05 /System/Library/CoreServices/Dock.app/Contents/XPCSer
+swamysivasubramaniyan   716   0.0  0.0  4559448   2360   ??  S    Tue01PM   0:00.04 /System/Library/Frameworks/ColorSync.framework/Suppor
+root               715   0.0  0.0  4561448   3500   ??  S    Tue01PM   0:00.36 /usr/sbin/systemstats --logger-helper /private/var/db
+swamysivasubramaniyan   713   0.0  0.0  5483808   9692   ??  S    Tue01PM   0:03.91 cloudphotod
+root               712   0.0  0.0  4661996   3408   ??  Ss   Tue01PM   0:00.05 /usr/libexec/morphunassetsupdaterd
+root               711   0.0  0.0  4924612   2600   ??  Ss   Tue01PM   0:00.04 /System/Library/PrivateFrameworks/AppStoreDaemon.fram
+_installcoordinationd   710   0.0  0.0  4924192   3728   ??  Ss   Tue01PM   0:00.06 /System/Library/PrivateFrameworks/InstallCoordination
+swamysivasubramaniyan   709   0.0  0.1  5532872  30836   ??  S    Tue01PM   0:05.84 /System/Library/PrivateFrameworks/AppStoreDaemon.fram
+root               708   0.0  0.0  4365668   2356   ??  Ss   Tue01PM   0:00.01 /System/Library/Frameworks/AudioToolbox.framework/XPC
+swamysivasubramaniyan   702   0.0  0.0  4956892   8168   ??  S    Tue01PM   0:00.35 /usr/libexec/keyboardservicesd
+swamysivasubramaniyan   701   0.0  0.2  5821216  63348   ??  S    Tue01PM   0:58.18 /System/Library/Services/AppleSpell.service/Contents/
+swamysivasubramaniyan   686   0.0  0.0  5368120  12732   ??  Ss   Tue01PM   0:01.36 /Users/swamysivasubramaniyan/Library/Application Supp
+swamysivasubramaniyan   678   0.0  0.1 43294040  34700   ??  S    Tue01PM   0:02.29 /Applications/Google Chrome.app/Contents/Frameworks/G
+swamysivasubramaniyan   675   0.0  0.1 43411020  35224   ??  S    Tue01PM   0:02.17 /Applications/Google Chrome.app/Contents/Frameworks/G
+swamysivasubramaniyan   674   0.0  0.1 43409740  31564   ??  S    Tue01PM   0:02.16 /Applications/Google Chrome.app/Contents/Frameworks/G
+swamysivasubramaniyan   672   0.0  0.1 43407692  31560   ??  S    Tue01PM   0:02.17 /Applications/Google Chrome.app/Contents/Frameworks/G
+swamysivasubramaniyan   670   0.0  0.3 43561768  85920   ??  S    Tue01PM   0:28.78 /Applications/Google Chrome.app/Contents/Frameworks/G
+swamysivasubramaniyan   668   0.0  0.1 43278668  33628   ??  S    Tue01PM   0:02.84 /Applications/Google Chrome.app/Contents/Frameworks/G
+root               666   0.0  0.0  5448036   2184   ??  Ss   Tue01PM   0:10.77 /usr/libexec/sysmond
+swamysivasubramaniyan   664   0.0  0.0  4990028   3896   ??  S    Tue01PM   0:00.68 /usr/libexec/SidecarRelay
+swamysivasubramaniyan   657   0.0  0.0  4382588   2568   ??  Ss   Tue01PM   0:00.02 /Applications/Google Chrome.app/Contents/Frameworks/G
+swamysivasubramaniyan   656   0.0  0.2  5713000  51228   ??  S    Tue01PM   0:20.05 /Applications/Google Chrome.app/Contents/Frameworks/G
+_datadetectors     651   0.0  0.0  4792136   1376   ??  Ss   Tue01PM   0:00.03 /usr/libexec/DataDetectorsSourceAccess
+swamysivasubramaniyan   649   0.0  0.0  4399804   1224   ??  Ss   Tue01PM   0:00.01 /System/Library/Frameworks/NetFS.framework/Versions/A
+swamysivasubramaniyan   648   0.0  0.0  5856968  14252   ??  S    Tue01PM   0:00.83 /Applications/Wacom Tablet.localized/.Tablet/WacomTou
+swamysivasubramaniyan   647   0.0  0.0  5133008  11436   ??  S    Tue01PM   0:00.87 /System/Library/PrivateFrameworks/SoftwareUpdate.fram
+swamysivasubramaniyan   646   0.0  0.0  5300536   9940   ??  S    Tue01PM   0:00.62 /Applications/Wacom Tablet.localized/.Tablet/TabletDr
+root               645   0.0  0.0  4530288   1908   ??  Ss   Tue01PM   0:00.03 /System/Library/CoreServices/CrashReporterSupportHelp
+root               644   0.0  0.0  5216248   4660   ??  Ss   Tue01PM   0:00.10 /System/Library/PrivateFrameworks/AuthKit.framework/V
+swamysivasubramaniyan   643   0.0  0.0  4362940   1224   ??  Ss   Tue01PM   0:00.01 /System/Library/Frameworks/NetFS.framework/Versions/A
+swamysivasubramaniyan   642   0.0  0.0  4952496   7156   ??  Ss   Tue01PM   0:00.08 /System/Library/PrivateFrameworks/AssistantServices.f
+swamysivasubramaniyan   641   0.0  0.0  5478220   6188   ??  S    Tue01PM   0:00.22 /usr/libexec/diagnosticextensionsd
+root               639   0.0  0.0  4530876   4620   ??  Ss   Tue01PM   0:00.05 /System/Library/PrivateFrameworks/SiriInference.frame
+swamysivasubramaniyan   633   0.0  0.0  4391612   1224   ??  Ss   Tue01PM   0:00.01 /System/Library/Frameworks/NetFS.framework/Versions/A
+swamysivasubramaniyan   631   0.0  0.6  5845176 198448   ??  S    Tue01PM   5:42.26 /Applications/Box.app/Contents/MacOS/streem --log-lev
+swamysivasubramaniyan   630   0.0  0.1  5529196  23536   ??  S    Tue01PM   0:02.31 /System/Library/PrivateFrameworks/AMPLibrary.framewor
+swamysivasubramaniyan   629   0.0  0.0  5054656   5916   ??  S    Tue01PM   0:00.47 /usr/libexec/findmydevice-user-agent
+_assetcache        628   0.0  0.0  4858956    704   ??  S    Tue01PM   0:00.17 /usr/sbin/distnoted agent
+swamysivasubramaniyan   616   0.0  0.0  5426844  10736   ??  Ss   Tue01PM   0:02.17 /System/Library/Input Methods/PressAndHold.app/Conten
+_gamecontrollerd   606   0.0  0.0  4924316   5932   ??  Ss   Tue01PM   1:42.33 /usr/libexec/gamecontrollerd
+swamysivasubramaniyan   598   0.0  0.0  5236024  12660   ??  Ss   Tue01PM   0:01.36 /Users/swamysivasubramaniyan/Library/Application Supp
+swamysivasubramaniyan   597   0.0  0.0  5553860  16488   ??  S    Tue01PM   0:01.24 /Applications/Box.app/Contents/Resources/Box UI.app/C
+root               596   0.0  0.0  4390744   1208   ??  Ss   Tue01PM   0:00.05 /usr/libexec/misagent
+root               594   0.0  0.0  4792772   1080   ??  Ss   Tue01PM   0:00.03 /System/Library/Frameworks/OpenGL.framework/Versions/
+swamysivasubramaniyan   591   0.0  0.0  4399248   1292   ??  Ss   Tue01PM   0:00.01 /System/Library/PrivateFrameworks/IMFoundation.framew
+swamysivasubramaniyan   590   0.0  0.0  4402856   2880   ??  S    Tue01PM   0:00.06 /Applications/Google Chrome.app/Contents/Frameworks/G
+swamysivasubramaniyan   587   0.0  0.0  5477164   5004   ??  Ss   Tue01PM   0:01.40 /System/Library/PrivateFrameworks/CloudDocsDaemon.fra
+root               584   0.0  0.0  4661900    760   ??  Ss   Tue01PM   0:00.02 /System/Library/Frameworks/CoreMediaIO.framework/Vers
+swamysivasubramaniyan   571   0.0  0.0  4962236   9708   ??  Ss   Tue01PM   0:10.44 /System/Library/PrivateFrameworks/CloudDocs.framework
+root               570   0.0  0.0  4768100   1288   ??  Ss   Tue01PM   0:00.18 /usr/libexec/logd_helper
+root               569   0.0  0.0  5487696   9064   ??  Ss   Tue01PM   0:04.62 /System/Library/CoreServices/SubmitDiagInfo server-in
+swamysivasubramaniyan   568   0.0  0.0  4531616   2408   ??  S    Tue01PM   0:00.05 /usr/libexec/spindump_agent
+root               567   0.0  0.0  5480616  10504   ??  Ss   Tue01PM   0:05.78 /usr/sbin/spindump
+swamysivasubramaniyan   566   0.0  0.0  5084048   6180   ??  S    Tue01PM   0:01.67 /System/Library/PrivateFrameworks/UsageTracking.frame
+_captiveagent      563   0.0  0.0  4793640   2420   ??  Ss   Tue01PM   0:00.08 /usr/libexec/captiveagent
+swamysivasubramaniyan   561   0.0  0.0  5086916   7224   ??  S    Tue01PM   0:02.99 /Library/Application Support/Logitech.localized/Logit
+root               557   0.0  0.0  5217952   3644   ??  Ss   Tue01PM   0:00.07 /System/Library/PrivateFrameworks/AssetCacheServicesE
+_assetcache        554   0.0  0.0  5216732   5028   ??  Ss   Tue01PM   0:00.13 /usr/libexec/AssetCache/AssetCache
+swamysivasubramaniyan   553   0.0  0.0  5484600   7448   ??  S    Tue01PM   0:00.69 /System/Library/PrivateFrameworks/AssetCacheServices.
+swamysivasubramaniyan   552   0.0  0.0  4691056   3652   ??  S    Tue01PM   0:00.05 /System/Library/CoreServices/Menu Extras/SafeEjectGPU
+swamysivasubramaniyan   551   0.0  0.0  4841116   2348   ??  S    Tue01PM   0:00.01 SafeEjectGPUAgent
+root               549   0.0  0.0  4380348   1216   ??  Ss   Tue01PM   0:00.01 /System/Library/Frameworks/NetFS.framework/Versions/A
+swamysivasubramaniyan   547   0.0  0.0  5489888  13532   ??  S    Tue01PM   0:01.90 /System/Library/PrivateFrameworks/CommerceKit.framewo
+swamysivasubramaniyan   543   0.0  0.0  4559896   6552   ??  S    Tue01PM   0:00.08 /System/Library/PrivateFrameworks/CommunicationsFilte
+swamysivasubramaniyan   542   0.0  0.1  6625440  41548   ??  S    Tue01PM   0:15.25 /Applications/reMarkable.app/Contents/MacOS/reMarkabl
+swamysivasubramaniyan   539   0.0  0.0  5367096  12648   ??  Ss   Tue01PM   0:01.35 /Users/swamysivasubramaniyan/Library/Application Supp
+swamysivasubramaniyan   538   0.0  0.0  5485396   5136   ??  S    Tue01PM   0:00.39 /usr/libexec/neagent
+root               537   0.0  0.0  4690820   3724   ??  Ss   Tue01PM   0:00.44 /System/Library/PrivateFrameworks/AmbientDisplay.fram
+swamysivasubramaniyan   536   0.0  0.0  4530448   3556   ??  S    Tue01PM   0:00.05 /System/Library/PrivateFrameworks/CoreFollowUp.framew
+swamysivasubramaniyan   531   0.0  0.0  5963304  15616   ??  S    Tue01PM   0:02.03 /Users/swamysivasubramaniyan/Library/Application Supp
+swamysivasubramaniyan   527   0.0  0.0  5352600  12660   ??  S    Tue01PM   0:03.20 /usr/libexec/fmfd
+swamysivasubramaniyan   526   0.0  0.0  5368120  12664   ??  Ss   Tue01PM   0:01.38 /Users/swamysivasubramaniyan/Library/Application Supp
+swamysivasubramaniyan   525   0.0  0.0  5658504  11800   ??  S    Tue01PM   0:01.06 /System/Library/CoreServices/CoreLocationAgent.app/Co
+swamysivasubramaniyan   522   0.0  0.0  5477876   6896   ??  S    Tue01PM   0:00.23 /usr/libexec/triald
+swamysivasubramaniyan   520   0.0  0.0  5504224   6416   ??  Ss   Tue01PM   0:00.77 /System/Library/Frameworks/VideoToolbox.framework/Ver
+swamysivasubramaniyan   519   0.0  0.0  4382312   2364   ??  Ss   Tue01PM   0:00.01 /System/Library/Frameworks/AudioToolbox.framework/XPC
+swamysivasubramaniyan   518   0.0  0.1  5560336  34020   ??  S    Tue01PM   0:04.15 /System/Library/CoreServices/UIKitSystem.app/Contents
+swamysivasubramaniyan   517   0.0  0.2  6746120  72424   ??  S    Tue01PM  22:45.17 /Applications/Backup and Sync.app/Contents/MacOS/Back
+swamysivasubramaniyan   515   0.0  0.0  4953292   2924   ??  Ss   Tue01PM   0:00.14 /System/Library/Frameworks/AudioToolbox.framework/XPC
+swamysivasubramaniyan   514   0.0  0.0  4691080   3004   ??  S    Tue01PM   0:00.33 /System/Library/CoreServices/pbs
+swamysivasubramaniyan   513   0.0  0.0  5346084   4744   ??  S    Tue01PM   0:00.14 /System/Library/Frameworks/AudioToolbox.framework/Aud
+swamysivasubramaniyan   512   0.0  0.0  5219380   5592   ??  S    Tue01PM   0:00.10 /System/Library/PrivateFrameworks/CallHistory.framewo
+swamysivasubramaniyan   511   0.0  0.1  5595940  22452   ??  Ss   Tue01PM   0:03.36 /System/Library/Frameworks/QuickLook.framework/Versio
+swamysivasubramaniyan   510   0.0  0.0  5483688  14700   ??  Ss   Tue01PM   0:01.99 /System/Library/Frameworks/QuickLook.framework/Versio
+swamysivasubramaniyan   507   0.0  0.0  5600860  12060   ??  S    Tue01PM   0:14.90 /System/Library/Frameworks/QuickLookThumbnailing.fram
+swamysivasubramaniyan   506   0.0  0.0  5491320  14096   ??  S    Tue01PM   0:03.82 /System/Library/PrivateFrameworks/CoreParsec.framewor
+swamysivasubramaniyan   505   0.0  0.0  5223476  10728   ??  S    Tue01PM   0:01.07 /System/Library/PrivateFrameworks/FamilyCircle.framew
+swamysivasubramaniyan   504   0.0  0.0  4530288   2852   ??  S    Tue01PM   0:00.43 /System/Library/PrivateFrameworks/MediaRemote.framewo
+swamysivasubramaniyan   503   0.0  0.0  5388580  11460   ??  S    Tue01PM   0:00.79 /System/Library/CoreServices/TextInputSwitcher.app/Co
+swamysivasubramaniyan   502   0.0  0.1  5851252  26124   ??  Ss   Tue01PM   0:05.37 /System/Library/CoreServices/Dock.app/Contents/XPCSer
+swamysivasubramaniyan   500   0.0  0.0  5512748  11452   ??  S    Tue01PM   0:14.81 /System/Library/PrivateFrameworks/GeoServices.framewo
+swamysivasubramaniyan   499   0.0  0.0  5826492  14052   ??  S    Tue01PM   0:01.59 /Users/swamysivasubramaniyan/Library/Application Supp
+_applepay          496   0.0  0.0  4691764   3612   ??  Ss   Tue01PM   0:00.09 /usr/libexec/nfcd
+swamysivasubramaniyan   495   0.0  0.6  7170924 206172   ??  S    Tue01PM  44:54.79 /System/Library/PrivateFrameworks/CoreSuggestions.fra
+_reportmemoryexception   494   0.0  0.0  4727884    704   ??  S    Tue01PM   0:00.17 /usr/sbin/distnoted agent
+_fpsd              492   0.0  0.0  5450088   9636   ??  Ss   Tue01PM   0:01.13 /System/Library/PrivateFrameworks/CoreADI.framework/a
+swamysivasubramaniyan   491   0.0  0.0  5484108   9216   ??  S    Tue01PM   0:07.77 /System/Library/PrivateFrameworks/FileProvider.framew
+root               490   0.0  0.0  5477304   3776   ??  Ss   Tue01PM   0:05.98 /System/Library/CoreServices/backupd.bundle/Contents/
+swamysivasubramaniyan   488   0.0  0.0  4970784  10112   ??  Ss   Tue01PM   0:00.71 /Users/swamysivasubramaniyan/Library/Application Supp
+swamysivasubramaniyan   487   0.0  0.0  4968088   9520   ??  Ss   Tue01PM   0:00.70 /Applications/Backup and Sync.app/Contents/PlugIns/Fi
+swamysivasubramaniyan   486   0.0  0.0  5528520  11888   ??  Ss   Tue01PM   0:01.52 /Applications/Box.app/Contents/PlugIns/FinderSyncExt.
+swamysivasubramaniyan   485   0.0  0.3  6484100  97644   ??  S    Tue01PM   0:32.76 /System/Library/CoreServices/Spotlight.app/Contents/M
+swamysivasubramaniyan   484   0.0  0.0  5354412   7200   ??  Ss   Tue01PM   0:00.86 /System/Library/PrivateFrameworks/IMFoundation.framew
+swamysivasubramaniyan   483   0.0  0.0  5479356   9360   ??  S    Tue01PM   0:14.57 /System/Library/PrivateFrameworks/UserActivity.framew
+swamysivasubramaniyan   482   0.0  0.0  4923680   2504   ??  S    Tue01PM   0:00.05 /System/Library/Frameworks/CryptoTokenKit.framework/c
+root               481   0.0  0.0  4792576   2072   ??  Ss   Tue01PM   0:00.04 /System/Library/Frameworks/CryptoTokenKit.framework/c
+swamysivasubramaniyan   479   0.0  0.0  4822520  10288   ??  S    Tue01PM   0:02.72 /System/Library/PrivateFrameworks/AppleMediaServices.
+swamysivasubramaniyan   477   0.0  0.0  5738708  13100   ??  S    Tue01PM   0:01.20 /System/Library/CoreServices/TextInputMenuAgent.app/C
+swamysivasubramaniyan   476   0.0  0.0  5478264   6272   ??  S    Tue01PM   0:00.93 /System/Library/CoreServices/diagnostics_agent
+swamysivasubramaniyan   475   0.0  0.0  4970524   9568   ??  S    Tue01PM   0:00.79 /Library/vnc/vncagent service
+swamysivasubramaniyan   473   0.0  0.0  5477920  12204   ??  S    Tue01PM   0:11.83 /System/Library/CoreServices/cloudpaird
+swamysivasubramaniyan   472   0.0  0.0  5426716   8636   ??  S    Tue01PM   0:00.69 /System/Library/CoreServices/AirPlayUIAgent.app/Conte
+swamysivasubramaniyan   471   0.0  0.1  5501688  26784   ??  S    Tue01PM   1:05.88 /usr/libexec/sharingd
+swamysivasubramaniyan   469   0.0  0.0  4953368   8864   ??  S    Tue01PM   0:01.92 /System/Library/PrivateFrameworks/AskPermission.frame
+swamysivasubramaniyan   468   0.0  0.0  5084792   5924   ??  S    Tue01PM   0:28.58 /Library/PrivilegedHelperTools/com.wacom.IOManager.ap
+swamysivasubramaniyan   467   0.0  0.0  4969468   9748   ??  S    Tue01PM   0:00.72 /Library/Application Support/Box/Box/Autoupdater/Box
+swamysivasubramaniyan   466   0.0  0.1  5506232  19664   ??  S    Tue01PM   0:04.90 /Library/Printers/hp/Frameworks/HPDeviceMonitoring.fr
+swamysivasubramaniyan   465   0.0  0.0  5478388   4256   ??  S    Tue01PM   0:08.92 /System/Library/Image Capture/Support/icdd
+swamysivasubramaniyan   464   0.0  0.0  5499580  11740   ??  S    Tue01PM   0:16.99 /Library/Printers/Canon/MFScanner/Utilities/Canon MFS
+swamysivasubramaniyan   462   0.0  0.0  4692356   6712   ??  S    Tue01PM   0:00.28 /System/Library/Frameworks/InputMethodKit.framework/R
+swamysivasubramaniyan   461   0.0  0.0  4974244  10688   ??  S    Tue01PM   0:01.65 /Library/Printers/Canon/MFScanner/Utilities/Canon MF
+swamysivasubramaniyan   460   0.0  0.0  4691460   4516   ??  S    Tue01PM   0:02.09 /Library/PrivilegedHelperTools/com.wacom.DataStoreMgr
+swamysivasubramaniyan   459   0.0  0.2  5596844  55592   ??  S    Tue01PM   5:09.56 /Library/Application Support/Logitech.localized/Logit
+swamysivasubramaniyan   456   0.0  0.1  5550924  19652   ??  S    Tue01PM   0:25.55 /Applications/Wacom Tablet.localized/.Tablet/WacomTab
+swamysivasubramaniyan   453   0.0  0.0  5085464   6280   ??  S    Tue01PM   0:01.00 /System/Library/PrivateFrameworks/CoreSpeech.framewor
+swamysivasubramaniyan   452   0.0  0.0  5845752  10268   ??  S    Tue01PM   0:00.83 /System/Library/PrivateFrameworks/AppSSO.framework/Su
+root               451   0.0  0.0  4924208   3700   ??  Ss   Tue01PM   0:01.42 /usr/libexec/wifivelocityd
+swamysivasubramaniyan   450   0.0  0.1  5556936  26100   ??  S    Tue01PM   3:17.15 /System/Library/PrivateFrameworks/IMDPersistence.fram
+swamysivasubramaniyan   449   0.0  0.0  4832348  10392   ??  S    Tue01PM   1:59.57 /System/Library/PrivateFrameworks/AMPDevices.framewor
+swamysivasubramaniyan   448   0.0  0.0  4923584   2008   ??  S    Tue01PM   0:00.23 /usr/libexec/WiFiVelocityAgent
+swamysivasubramaniyan   447   0.0  0.1  6160148  47480   ??  Ss   Tue01PM   0:14.12 /System/Library/CoreServices/ClimateProxy.app/Content
+swamysivasubramaniyan   446   0.0  0.1  5990332  45260   ??  Ss   Tue01PM   0:15.26 /System/Library/CoreServices/Screen Time.app/Contents
+swamysivasubramaniyan   445   0.0  0.2  6009956  54916   ??  Ss   Tue01PM   8:22.67 /System/Applications/Stocks.app/Contents/PlugIns/Stoc
+swamysivasubramaniyan   444   0.0  0.1  5353248  19336   ??  S    Tue01PM   0:04.06 /System/Library/PrivateFrameworks/IMCore.framework/im
+swamysivasubramaniyan   442   0.0  0.0  5020868   6648   ??  Ss   Tue01PM   0:00.07 /Applications/Microsoft Outlook.app/Contents/PlugIns/
+swamysivasubramaniyan   441   0.0  0.0  5486120  12052   ??  S    Tue01PM   0:01.75 /System/Library/PrivateFrameworks/AuthKit.framework/V
+swamysivasubramaniyan   440   0.0  0.0  5481956   4940   ??  S    Tue01PM   0:04.11 /System/Library/CoreServices/ReportCrash agent
+swamysivasubramaniyan   439   0.0  0.0  5477224  11828   ??  S    Tue01PM   0:15.64 /System/Library/Frameworks/AddressBook.framework/Exec
+swamysivasubramaniyan   438   0.0  0.8  6108352 257452   ??  Ss   Tue01PM  29:02.04 /System/Library/PrivateFrameworks/CalendarNotificatio
+root               437   0.0  0.0  4925360   3188   ??  Ss   Tue01PM   0:00.06 /System/Library/CoreServices/Software Update.app/Cont
+swamysivasubramaniyan   435   0.0  0.0  5478760   8756   ??  S    Tue01PM   0:02.06 /System/Library/CoreServices/sharedfilelistd
+_ctkd              433   0.0  0.0  4906764   1636   ??  Ss   Tue01PM   0:00.03 /System/Library/Frameworks/CryptoTokenKit.framework/c
+_appleevents       430   0.0  0.0  4990028    704   ??  S    Tue01PM   0:00.18 /usr/sbin/distnoted agent
+swamysivasubramaniyan   429   0.0  0.0  5448000   9740   ??  S    Tue01PM   0:00.41 /System/Library/Frameworks/Security.framework/Version
+swamysivasubramaniyan   427   0.0  0.0  5230060  12668   ??  S    Tue01PM   0:00.81 /System/Library/CoreServices/Keychain Circle Notifica
+swamysivasubramaniyan   426   0.0  0.0  4953036   6568   ??  S    Tue01PM   0:00.14 /System/Library/PrivateFrameworks/ProtectedCloudStora
+swamysivasubramaniyan   425   0.0  0.0  4530288   4088   ??  S    Tue01PM   0:00.09 /System/Library/PrivateFrameworks/CoreCDP.framework/V
+root               423   0.0  0.0  4560576   6444   ??  Ss   Tue01PM   0:00.78 /usr/sbin/WirelessRadioManagerd
+swamysivasubramaniyan   422   0.0  0.1  5492988  20840   ??  S    Tue01PM   0:07.04 /System/Library/PrivateFrameworks/TelephonyUtilities.
+swamysivasubramaniyan   421   0.0  0.1  5557840  38836   ??  Ss   Tue01PM   0:51.72 /System/Library/PrivateFrameworks/AssistantServices.f
+swamysivasubramaniyan   420   0.0  0.5  8880068 169860   ??  S    Tue01PM   1:27.55 /System/Library/Frameworks/CoreServices.framework/Fra
+swamysivasubramaniyan   419   0.0  0.1  5715008  17284   ??  S    Tue01PM   0:06.51 /System/Library/CoreServices/iconservicesagent
+swamysivasubramaniyan   418   0.0  0.0  5649860  13944   ??  S    Tue01PM   0:15.59 /System/Library/CoreServices/WiFiAgent.app/Contents/M
+swamysivasubramaniyan   417   0.0  0.0  4400788   1588   ??  Ss   Tue01PM   0:00.02 /System/Library/PrivateFrameworks/login.framework/Ver
+swamysivasubramaniyan   416   0.0  0.0  4822412   4220   ??  S    Tue01PM   0:00.09 /System/Library/Frameworks/CryptoTokenKit.framework/c
+swamysivasubramaniyan   415   0.0  0.1  5487056  24996   ??  S    Tue01PM   0:40.29 /System/Library/PrivateFrameworks/CoreDuetContext.fra
+swamysivasubramaniyan   414   0.0  0.0  5484716   8864   ??  S    Tue01PM   0:02.63 /usr/libexec/swcd
+swamysivasubramaniyan   413   0.0  0.1  5530636  35396   ??  S    Tue01PM   0:24.08 /System/Library/PrivateFrameworks/AssistantServices.f
+swamysivasubramaniyan   412   0.0  0.1  5518744  31548   ??  S    Tue01PM   0:21.86 /System/Library/PrivateFrameworks/CloudKitDaemon.fram
+swamysivasubramaniyan   411   0.0  0.0  4976420   5792   ??  S    Tue01PM   0:00.57 /System/Library/Frameworks/ApplicationServices.framew
+swamysivasubramaniyan   410   0.0  0.0  5493660  14356   ??  S    Tue01PM   0:04.26 /System/Library/PrivateFrameworks/CloudDocsDaemon.fra
+swamysivasubramaniyan   409   0.0  0.1  5487324  17560   ??  S    Tue01PM   0:06.74 /System/Library/PrivateFrameworks/ExchangeSync.framew
+swamysivasubramaniyan   408   0.0  0.1  5538164  46716   ??  S    Tue01PM   1:08.71 /System/Library/Frameworks/Accounts.framework/Version
+swamysivasubramaniyan   407   0.0  0.0  5477928   7464   ??  S    Tue01PM   0:07.44 /System/Library/Frameworks/ApplicationServices.framew
+swamysivasubramaniyan   406   0.0  0.1  5480432  25644   ??  S    Tue01PM   0:06.85 /System/Library/PrivateFrameworks/HomeKitDaemon.frame
+root               404   0.0  0.0  4804448   8172   ??  Ss   Tue01PM   0:10.48 /usr/sbin/filecoordinationd
+swamysivasubramaniyan   403   0.0  0.1  5576676  23128   ??  S    Tue01PM   3:16.79 /System/Library/PrivateFrameworks/PhotoLibraryService
+swamysivasubramaniyan   402   0.0  0.0  5479492   5636   ??  S    Tue01PM   0:04.63 /usr/libexec/containermanagerd --runmode=agent --bund
+swamysivasubramaniyan   401   0.0  0.0  5488616  11536   ??  S    Tue01PM   0:01.63 /System/Library/PrivateFrameworks/iTunesCloud.framewo
+swamysivasubramaniyan   400   0.0  0.1  5483776  27520   ??  S    Tue01PM   1:35.83 /usr/libexec/trustd --agent
+swamysivasubramaniyan   399   0.0  0.0  5478412   6948   ??  S    Tue01PM   0:05.23 /System/Library/PrivateFrameworks/TCC.framework/Resou
+swamysivasubramaniyan   397   0.0  0.1  5497956  17260   ??  S    Tue01PM   0:06.66 /System/Library/PrivateFrameworks/IDS.framework/ident
+swamysivasubramaniyan   396   0.0  0.1  6030680  17028   ??  Ss   Tue01PM   0:02.21 /System/Library/Frameworks/Quartz.framework/Versions/
+swamysivasubramaniyan   395   0.0  0.0  5347748   9528   ??  S    Tue01PM   0:01.65 /System/Library/CoreServices/backgroundtaskmanagement
+swamysivasubramaniyan   394   0.0  0.0  5478012   3228   ??  S    Tue01PM   0:02.68 /usr/libexec/secinitd
+root               392   0.0  0.0  4825888   4764   ??  Ss   Tue01PM   0:01.16 /usr/sbin/systemsoundserverd
+swamysivasubramaniyan   391   0.0  0.1  5494944  20240   ??  S    Tue01PM   0:41.93 /System/Library/PrivateFrameworks/ScreenTimeCore.fram
+swamysivasubramaniyan   388   0.0  0.0  5492464  15836   ??  S    Tue01PM   0:40.34 /usr/sbin/usernoted
+swamysivasubramaniyan   384   0.0  0.0  5515728  13364   ??  S    Tue01PM   0:03.02 /System/Library/PrivateFrameworks/AppleMediaServicesU
+swamysivasubramaniyan   382   0.0  0.0  5351312   6404   ??  S    Tue01PM   0:00.76 /usr/libexec/dmd
+swamysivasubramaniyan   381   0.0  0.7  6683360 225884   ??  S    Tue01PM  73:59.03 /System/Library/PrivateFrameworks/CalendarAgent.frame
+swamysivasubramaniyan   380   0.0  0.1  5538816  30556   ??  S    Tue01PM   3:09.01 /usr/libexec/routined LAUNCHED_BY_LAUNCHD
+swamysivasubramaniyan   379   0.0  0.0  4801936   6372   ??  S    Tue01PM   0:00.81 /usr/libexec/pboard
+swamysivasubramaniyan   378   0.0  0.0  4691052   7928   ??  S    Tue01PM   0:03.62 /System/Library/PrivateFrameworks/ViewBridge.framewor
+swamysivasubramaniyan   377   0.0  0.0  5221184  10508   ??  S    Tue01PM   0:00.89 /System/Library/Frameworks/Security.framework/Version
+swamysivasubramaniyan   376   0.0  0.0  5477800  14988   ??  S    Tue01PM   0:07.06 /usr/libexec/rapportd
+swamysivasubramaniyan   375   0.0  0.0  5492132  10120   ??  S    Tue01PM   0:18.72 /usr/libexec/nsurlsessiond
+swamysivasubramaniyan   374   0.0  0.0  5215948   6080   ??  S    Tue01PM   0:17.45 /System/Library/CoreServices/lockoutagent
+swamysivasubramaniyan   373   0.0  0.0  5215416   4324   ??  S    Tue01PM   0:00.21 /usr/libexec/networkserviceproxy
+swamysivasubramaniyan   372   0.0  0.0  4530844   1800   ??  S    Tue01PM   0:00.02 /System/Library/CoreServices/APFSUserAgent
+swamysivasubramaniyan   370   0.0  0.1  5491152  17440   ??  S    Tue01PM   0:03.37 /System/Library/Frameworks/CoreTelephony.framework/Su
+swamysivasubramaniyan   368   0.0  0.1  5502280  20644   ??  S    Tue01PM   0:52.16 /usr/libexec/secd
+swamysivasubramaniyan   367   0.0  0.2  6464472  82680   ??  S    Tue01PM   2:19.93 /System/Library/CoreServices/Finder.app/Contents/MacO
+swamysivasubramaniyan   366   0.0  0.1  6003668  20064   ??  S    Tue01PM   0:04.07 /System/Library/CoreServices/SystemUIServer.app/Conte
+swamysivasubramaniyan   365   0.0  0.0  5487380  12212   ??  S    Tue01PM   0:14.79 /usr/libexec/lsd
+swamysivasubramaniyan   364   0.0  0.1  6152776  31668   ??  S    Tue01PM   4:08.43 /System/Library/CoreServices/ControlCenter.app/Conten
+swamysivasubramaniyan   363   0.0  0.1  6036988  24340   ??  S    Tue01PM   0:28.44 /System/Library/CoreServices/Dock.app/Contents/MacOS/
+swamysivasubramaniyan   362   0.0  0.0  5239160   9300   ??  S    Tue01PM   0:00.69 /System/Library/CoreServices/talagent
+swamysivasubramaniyan   360   0.0  0.1  5482144  17928   ??  S    Tue01PM   0:00.86 /System/Library/PrivateFrameworks/CloudServices.frame
+swamysivasubramaniyan   359   0.0  0.0  5484432  16552   ??  S    Tue01PM   0:10.42 /usr/libexec/knowledge-agent
+swamysivasubramaniyan   357   0.0  0.0  5479576  13116   ??  S    Tue01PM   0:28.40 /usr/libexec/UserEventAgent (Aqua)
+swamysivasubramaniyan   356   0.0  0.0  5451316   4032   ??  S    Tue01PM   1:01.65 /usr/sbin/cfprefsd agent
+root               355   0.0  0.0  4792984   1056   ??  Ss   Tue01PM   0:00.09 /usr/libexec/securityd_service
+swamysivasubramaniyan   354   0.0  0.0  4559776   5192   ??  S    Tue01PM   0:00.15 /System/Library/Frameworks/LocalAuthentication.framew
+swamysivasubramaniyan   353   0.0  0.0  4732016   5032   ??  S    Tue01PM   1:11.66 /usr/sbin/distnoted agent
+_netbios           352   0.0  0.0  4662268   2880   ??  SNs  Tue01PM   0:00.36 /usr/sbin/netbiosd
+root               351   0.0  0.0  4559504   4580   ??  Ss   Tue01PM   0:00.06 /System/Library/Frameworks/LocalAuthentication.framew
+_nsurlsessiond     347   0.0  0.0  4858956    704   ??  S    Tue01PM   0:00.19 /usr/sbin/distnoted agent
+root               346   0.0  0.0  4785320   4344   ??  Ss   Tue01PM   0:00.04 /System/Library/Frameworks/GSS.framework/Helpers/GSSC
+root               343   0.0  0.0  4530828   1320   ??  Ss   Tue01PM   0:00.03 /System/Library/PrivateFrameworks/AccountPolicy.frame
+root               339   0.0  0.0  4494480   3512   ??  Ss   Tue01PM   0:00.02 /usr/libexec/bootinstalld
+root               337   0.0  0.0  4690916   6568   ??  S    Tue01PM   0:03.08 /System/Library/PrivateFrameworks/ViewBridge.framewor
+_appleevents       336   0.0  0.0  5215528   5016   ??  Ss   Tue01PM   0:01.13 /System/Library/CoreServices/appleeventsd --server
+root               334   0.0  0.0  4976404   5744   ??  Ss   Tue01PM   0:00.40 /System/Library/Frameworks/ApplicationServices.framew
+_atsserver         333   0.0  0.0  5449348   3180   ??  Ss   Tue01PM   0:00.24 /System/Library/Frameworks/ApplicationServices.framew
+root               332   0.0  0.0  5046088   1284   ??  Ss   Tue01PM   0:00.03 /usr/libexec/colorsyncd
+root               331   0.0  0.0  4530528   2272   ??  Ss   Tue01PM   0:00.04 /usr/libexec/colorsync.displayservices
+root               329   0.0  0.0  4690752   4252   ??  Ss   Tue01PM   0:00.08 /usr/libexec/wifianalyticsd
+root               328   0.0  0.0  5994452  13036   ??  Ss   Tue01PM  21:47.70 /System/Library/CoreServices/backupd.bundle/Contents/
+_locationd         326   0.0  0.0  5502388  15704   ??  Ss   Tue01PM   0:29.01 /usr/libexec/locationd
+_spotlight         322   0.0  0.0  4596848    900   ??  S    Tue01PM   0:00.26 /usr/sbin/distnoted agent
+_windowserver      319   0.0  0.0  4858956    696   ??  S    Tue01PM   0:00.20 /usr/sbin/distnoted agent
+_softwareupdate    318   0.0  0.0  5560112  12724   ??  Ss   Tue01PM   0:10.88 /System/Library/CoreServices/Software Update.app/Cont
+_hidd              316   0.0  0.0  4522112   1560   ??  Ss   Tue01PM   0:00.02 /usr/libexec/hidd
+_softwareupdate    315   0.0  0.0  4727884    696   ??  S    Tue01PM   0:00.20 /usr/sbin/distnoted agent
+root               314   0.0  0.0  4952912   3360   ??  Ss   Tue01PM   0:00.38 /System/Library/PrivateFrameworks/MobileSoftwareUpdat
+root               313   0.0  0.0  4350096   2204   ??  Ss   Tue01PM   0:00.13 /usr/libexec/thermald
+root               310   0.0  1.0 17341024 321980   ??  Ss   Tue01PM   9:43.73 /System/Library/Frameworks/CoreServices.framework/Fra
+_driverkit         306   0.0  0.0  4806392   1888   ??  Ss   Tue01PM   0:43.54 /System/Library/DriverExtensions/com.apple.AppleUserH
+_driverkit         304   0.0  0.0  4800244   1208   ??  Ss   Tue01PM   0:00.01 /System/Library/DriverExtensions/com.apple.AppleUserH
+root               303   0.0  0.0  4794044   2684   ??  Ss   Tue01PM   0:00.68 /System/Library/PrivateFrameworks/CoreSymbolication.f
+_driverkit         300   0.0  0.0  4800244   1104   ??  Ss   Tue01PM   0:00.03 /System/Library/DriverExtensions/com.apple.AppleUserH
+_driverkit         296   0.0  0.0  4806368   1716   ??  Ss   Tue01PM   0:04.58 /System/Library/DriverExtensions/com.apple.AppleUserH
+_driverkit         295   0.0  0.0  4806368   1572   ??  Ss   Tue01PM   0:47.58 /System/Library/DriverExtensions/com.apple.AppleUserH
+_driverkit         294   0.0  0.0  4800224   1196   ??  Ss   Tue01PM   0:00.04 /System/Library/DriverExtensions/com.apple.AppleUserH
+root               293   0.0  0.0  5448316   2484   ??  Ss   Tue01PM   0:00.66 /System/Library/Frameworks/Security.framework/Version
+root               292   0.0  0.0  4381372   1224   ??  Ss   Tue01PM   0:00.01 /System/Library/Frameworks/NetFS.framework/Versions/A
+_coreaudiod        291   0.0  0.0  4391268   2356   ??  Ss   Tue01PM   0:00.01 /System/Library/Frameworks/AudioToolbox.framework/XPC
+root               285   0.0  0.0  5045940   2624   ??  Ss   Tue01PM   0:00.05 /System/Library/Frameworks/AudioToolbox.framework/Aud
+root               284   0.0  0.0  5215616   4024   ??  Ss   Tue01PM   0:15.35 /usr/libexec/containermanagerd --runmode=agent --bund
+root               283   0.0  0.0  4953708   3132   ??  Ss   Tue01PM   0:00.09 /usr/libexec/secinitd
+root               268   0.0  0.1  5478072  19844   ??  Ss   Tue01PM   0:14.46 /usr/libexec/ApplicationFirewall/socketfilterfw
+_locationd         261   0.0  0.0  5084036   2568   ??  S    Tue01PM   0:00.05 /usr/libexec/containermanagerd --runmode=agent --bund
+_locationd         258   0.0  0.0  5216864   3432   ??  S    Tue01PM   0:00.21 /usr/libexec/trustd --agent
+_locationd         257   0.0  0.0  4383372    736   ??  S    Tue01PM   0:00.01 /usr/sbin/cfprefsd agent
+_locationd         256   0.0  0.0  4953240   2576   ??  S    Tue01PM   0:00.05 /usr/libexec/secinitd
+_locationd         255   0.0  0.0  4858992    860   ??  S    Tue01PM   0:00.25 /usr/sbin/distnoted agent
+_locationd         254   0.0  0.0  5521288   8468   ??  S    Tue01PM   0:01.33 /System/Library/PrivateFrameworks/GeoServices.framewo
+_coreaudiod        252   0.0  0.0  4383356   1276   ??  Ss   Tue01PM   0:00.01 /System/Library/Frameworks/CoreAudio.framework/Versio
+root               250   0.0  0.0  4374736   2172   ??  Ss   Tue01PM   0:00.01 /System/Library/PrivateFrameworks/FindMyMac.framework
+_cmiodalassistants   249   0.0  0.0  5112232   4900   ??  Ss   Tue01PM   0:00.73 /System/Library/Frameworks/CoreMediaIO.framework/Reso
+root               248   0.0  0.0  4627812    976   ??  Ss   Tue01PM   0:00.02 /usr/libexec/firmwarecheckers/ethcheck/ethcheck --int
+_nsurlsessiond     247   0.0  0.0  5489420   8212   ??  Ss   Tue01PM   0:06.75 /usr/libexec/nsurlsessiond --privileged
+root               246   0.0  0.0  4693020   5292   ??  Ss   Tue01PM   0:02.27 /System/Library/PrivateFrameworks/WirelessDiagnostics
+root               245   0.0  0.0  5221284   9856   ??  Ss   Tue01PM   0:00.88 /usr/libexec/findmydeviced
+_coreaudiod        233   0.0  0.0  4990028    696   ??  S    Tue01PM   0:00.21 /usr/sbin/distnoted agent
+root               231   0.0  0.0  5083124   2872   ??  Ss   Tue01PM   0:01.44 /usr/libexec/usbd
+root               230   0.0  0.0  4530352   3100   ??  Ss   Tue01PM   0:00.36 /usr/libexec/apfsd
+root               229   0.0  0.0  4505744   2008   ??  Ss   Tue01PM   0:00.05 /System/Library/CryptoTokenKit/com.apple.ifdreader.sl
+root               228   0.0  0.0  5219964   7072   ??  Ss   Tue01PM   0:00.22 /usr/libexec/searchpartyd
+root               225   0.0  0.0  4822144   3064   ??  Ss   Tue01PM   0:05.01 /usr/sbin/mDNSResponderHelper
+root               221   0.0  0.1  6635652  28104   ??  Ss   Tue01PM   8:17.53 /usr/libexec/syspolicyd
+root               220   0.0  0.0  4534632   3212   ??  Ss   Tue01PM   0:00.48 /usr/libexec/diskmanagementd
+_mdnsresponder     219   0.0  0.0  5085508   6836   ??  Ss   Tue01PM   1:27.43 /usr/sbin/mDNSResponder
+root               218   0.0  0.0  5483348  15420   ??  Ss   Tue01PM   1:28.01 /usr/libexec/airportd
+_networkd          217   0.0  0.0  5492648   9432   ??  Ss   Tue01PM   0:45.59 /usr/libexec/symptomsd
+root               216   0.0  0.0  5214924   4332   ??  Ss   Tue01PM   0:01.04 /usr/libexec/nehelper
+root               215   0.0  0.0  4374640   3688   ??  Ss   Tue01PM   0:00.09 /usr/libexec/PowerUIAgent
+root               213   0.0  0.0  5486280   9496   ??  Ss   Tue01PM   0:13.18 /usr/libexec/mobileassetd
+root               209   0.0  0.0  4990064    884   ??  S    Tue01PM   0:00.25 /usr/sbin/distnoted agent
+root               205   0.0  0.0  5488720  15696   ??  Ss   Tue01PM   0:09.68 /usr/libexec/lsd runAsRoot
+root               189   0.0  0.0  5479016   4616   ??  Ss   Tue01PM   0:01.14 /System/Library/Frameworks/Security.framework/Version
+root               188   0.0  0.0  5487720  11976   ??  Ss   Tue01PM   0:49.23 /usr/libexec/trustd
+swamysivasubramaniyan   149   0.0  0.1  5717172  33332   ??  Ss   Tue01PM   0:15.26 /System/Library/CoreServices/loginwindow.app/Contents
+root               144   0.0  0.0  5071252   3236   ??  Ss   Tue01PM   0:00.85 /System/Library/CoreServices/coreservicesd
+_analyticsd        142   0.0  0.0  5487280   7252   ??  Ss   Tue01PM   0:02.84 /System/Library/PrivateFrameworks/CoreAnalytics.frame
+root               138   0.0  0.0  5488588  12096   ??  Ss   Tue01PM   0:14.25 /System/Library/PrivateFrameworks/TCC.framework/Resou
+root               137   0.0  0.0  4776312    384   ??  Ss   Tue01PM   0:00.06 aslmanager
+root               135   0.0  0.0  5486672   6560   ??  Ss   Tue01PM   0:03.24 /usr/libexec/amfid
+root               134   0.0  0.0  5449328   3920   ??  Ss   Tue01PM   0:26.31 /usr/sbin/cfprefsd daemon
+root               133   0.0  0.0  5479884   8068   ??  Ss   Tue01PM   0:13.19 /usr/libexec/AirPlayXPCHelper
+root               132   0.0  0.0  5083708   8084   ??  Ss   Tue01PM   0:01.18 /usr/libexec/corebrightnessd --launchd
+root               130   0.0  0.0  5317000   2628   ??  Ss   Tue01PM   0:30.52 /usr/sbin/notifyd
+root               127   0.0  0.0  4358504    936   ??  Ss   Tue01PM   0:00.01 /usr/sbin/KernelEventAgent
+root               126   0.0  0.0  5479844   5584   ??  Ss   Tue01PM   0:01.79 /System/Library/PrivateFrameworks/GenerationalStorage
+root               125   0.0  0.0  4530352   3020   ??  Ss   Tue01PM   0:00.09 /System/Library/CoreServices/logind
+root               123   0.0  0.0  5357180   9156   ??  Ss   Tue01PM   0:00.87 /Library/Application Support/Box/Box/Autoupdater/Box
+root               120   0.0  0.0  4399884   2332   ??  Ss   Tue01PM   0:00.05 /System/Library/PrivateFrameworks/AppleCredentialMana
+_distnote          119   0.0  0.0  5252208   1536   ??  Ss   Tue01PM   0:01.98 /usr/sbin/distnoted daemon
+root               117   0.0  0.0  5483152  10324   ??  Ss   Tue01PM   0:32.86 /usr/libexec/dasd
+_displaypolicyd    115   0.0  0.0  4794840   3196   ??  Ss   Tue01PM   0:00.47 /usr/libexec/displaypolicyd -k 1
+root               114   0.0  0.0  4514376   1536   ??  Ss   Tue01PM   0:00.02 autofsd
+root               110   0.0  0.0  4358232    932   ??  Ss   Tue01PM   0:00.01 auditd -l
+root               109   0.0  0.0  5478960   7016   ??  Ss   Tue01PM   0:03.68 /usr/sbin/securityd -i
+_usbmuxd           108   0.0  0.0  5086680   5084   ??  Ss   Tue01PM   0:44.22 /System/Library/PrivateFrameworks/MobileDevice.framew
+_timed             107   0.0  0.0  4558980   2836   ??  Ss   Tue01PM   0:00.85 /usr/libexec/timed
+root               106   0.0  0.0  5482512  11816   ??  Ss   Tue01PM   0:27.48 /System/Library/CoreServices/launchservicesd
+root               105   0.0  0.0  5006692   3256   ??  Ss   Tue01PM   0:00.12 /Library/PrivilegedHelperTools/com.docker.vmnetd
+root               104   0.0  0.0  5488480  10780   ??  Ss   Tue01PM   0:06.20 /System/Library/PrivateFrameworks/ApplePushService.fr
+root               103   0.0  0.0  5501096   9488   ??  Ss   Tue01PM   0:43.66 /usr/libexec/opendirectoryd
+root               102   0.0  0.0  5487200  14920   ??  Ss   Tue01PM   0:23.73 /System/Library/PrivateFrameworks/CoreDuetContext.fra
+root               101   0.0  0.0  4513716   1004   ??  Ss   Tue01PM   0:00.03 /usr/libexec/thermalmonitord
+root                98   0.0  0.1  5507532  20900   ??  Ss   Tue01PM   0:30.14 /usr/libexec/coreduetd
+root                96   0.0  0.0  4822616   6112   ??  Ss   Tue01PM   0:00.10 /Library/PrivilegedHelperTools/com.wacom.UpdateHelper
+root                94   0.0  0.0  5476436   3236   ??  Ss   Tue01PM   0:20.58 /usr/libexec/diskarbitrationd
+root                93   0.0  0.0  5482776   5924   ??  Ss   Tue01PM   0:04.16 /usr/libexec/kernelmanagerd
+_iconservices       92   0.0  0.0  4924580   3008   ??  Ss   Tue01PM   0:00.19 /System/Library/CoreServices/iconservicesd
+root                91   0.0  0.1  7425144  44768   ??  Ss   Tue01PM   4:11.82 /System/Library/Frameworks/CoreServices.framework/Fra
+root                87   0.0  0.0  4399788   2748   ??  Ss   Tue01PM   0:02.43 /usr/libexec/watchdogd
+_softwareupdate     85   0.0  0.0  4821932   3464   ??  Ss   Tue01PM   0:00.10 /System/Library/PrivateFrameworks/MobileSoftwareUpdat
+root                81   0.0  0.0  4661792   2916   ??  Ss   Tue01PM   0:00.28 /usr/libexec/keybagd -t 15
+root                80   0.0  0.1  5616792  24076   ??  Ss   Tue01PM   1:34.76 /usr/libexec/logd
+root                78   0.0  0.0  4690672   2332   ??  Ss   Tue01PM   0:00.06 /usr/libexec/remoted
+root                75   0.0  0.0  4822980   6860   ??  Ss   Tue01PM   0:21.82 /System/Library/CoreServices/powerd.bundle/powerd
+root                74   0.0  0.0  4783728   1088   ??  Ss   Tue01PM   0:00.02 endpointsecurityd
+root                73   0.0  0.0  4692988   7072   ??  Ss   Tue01PM   0:00.74 /Library/TimeMachineEditor/com.tclementdev.timemachin
+root                72   0.0  0.0  5482172   7976   ??  Ss   Tue01PM   0:14.69 /usr/libexec/configd
+root                70   0.0  0.0  5489320   7804   ??  Ss   Tue01PM   0:26.73 /usr/sbin/systemstats --daemon
+root                67   0.0  0.0  5087352  12148   ??  Ss   Tue01PM   0:02.97 /System/Library/PrivateFrameworks/MediaRemote.framewo
+root                66   0.0  0.0  5455152   6396   ??  Ss   Tue01PM   3:06.69 /System/Library/Frameworks/CoreServices.framework/Ver
+root                65   0.0  0.0  4358516   2456   ??  Ss   Tue01PM   0:02.37 /System/Library/PrivateFrameworks/Uninstall.framework
+root                62   0.0  0.0  5348328  10340   ??  Ss   Tue01PM   0:34.91 /usr/libexec/UserEventAgent (System)
+root                61   0.0  0.0  4662468   1076   ??  Ss   Tue01PM   0:09.84 /usr/sbin/syslogd
+root                 1   0.0  0.1  5460156  20504   ??  Ss   Tue01PM   6:19.59 /sbin/launchd
+root             26162   0.0  0.0  4530508   1200 s002  R+    1:08PM   0:00.00 ps aux
+swamysivasubramaniyan 23813   0.0  0.0        0      0   ??  Z    12:35PM   0:00.00 (uname)
+swamysivasubramaniyan 26159   0.0  0.1 43278668  44072   ??  S     1:08PM   0:00.10 /Applications/Google Chrome.app/Contents/Frameworks/G
+swamysivasubramaniyan 26156   0.0  0.1  5193724  24916   ??  S     1:08PM   0:00.06 /System/Library/Frameworks/CoreServices.framework/Fra
+swamysivasubramaniyan 26076   0.0  0.0  5355408   9040   ??  S     1:03PM   0:00.07 /System/Library/Frameworks/CoreServices.framework/Fra
+swamysivasubramaniyan 24864   0.0  0.1 43129800  33292   ??  S     1:00PM   0:00.10 /Applications/Google Chrome.app/Contents/Frameworks/G
+swamysivasubramaniyan 24863   0.0  0.2 43538768  73872   ??  S     1:00PM   0:00.44 /Applications/Google Chrome.app/Contents/Frameworks/G
+swamysivasubramaniyan 24862   0.0  0.2 43270968  63928   ??  S     1:00PM   0:00.35 /Applications/Google Chrome.app/Contents/Frameworks/G
+swamysivasubramaniyan 24861   0.0  0.2 43404088  64556   ??  S     1:00PM   0:00.35 /Applications/Google Chrome.app/Contents/Frameworks/G
+swamysivasubramaniyan 24840   0.0  0.6 43573676 193436   ??  S     1:00PM   0:04.90 /Applications/Google Chrome.app/Contents/Frameworks/G
+swamysivasubramaniyan 23812   0.0  0.1  5056840  21904   ??  S    12:35PM   0:00.22 docker serve --address unix:///Users/swamysivasubrama
+swamysivasubramaniyan 23811   0.0  0.1  5164704  23400   ??  S    12:35PM   0:00.72 com.docker.driver.amd64-linux -addr fd:3 -debug
+swamysivasubramaniyan 23810   0.0  0.0  5007388  10720   ??  S    12:35PM   0:02.72 vpnkit-bridge --addr listen://1999 host
+swamysivasubramaniyan 23809   0.0  0.1  5435716  26020   ??  S    12:35PM   0:00.34 com.docker.vpnkit --ethernet fd:3 --diagnostics fd:4
+swamysivasubramaniyan 23808   0.0  0.0  4587296   4236   ??  S    12:35PM   0:00.03 com.docker.osxfs serve --address fd:3 --connect v
+
+ms/0
+swamysivasubramaniyan 23802   0.0  0.0  5141192  12976   ??  S    12:35PM   0:00.19 /Applications/Docker.app/Contents/MacOS/com.docker.su
+swamysivasubramaniyan 23801   0.0  0.0  4646596   2680   ??  S    12:35PM   0:00.01 /usr/libexec/loginitemregisterd
+swamysivasubramaniyan 23800   0.0  0.1  5574000  31008   ??  S    12:35PM   0:00.71 /Applications/Docker.app/Contents/MacOS/com.docker.ba
+swamysivasubramaniyan 23787   0.0  0.5  7497612 162748   ??  S    12:35PM   0:54.32 /Applications/Docker.app/Contents/MacOS/Docker
+swamysivasubramaniyan 23683   0.0  0.1  5476956  18312   ??  S    12:21PM   0:00.34 /System/Library/PrivateFrameworks/AOSKit.framewor
+package main   
+k/Ve
+swamysivasubramaniyan 23599   0.0  0.1 43535176  42904   ??  S    12:10PM   0:00.50 /Applications/Google Chrome.app/Contents/Frameworks/G
+swamysivasubramaniyan 23597   0.0  0.8 48065060 264680   ??  S    12:10PM   0:23.42 /Applications/Google Chrome.app/Contents/Frameworks/G
+swamysivasubramaniyan 23571   0.0  0.3 43573648  87572   ??  S    12:10PM   0:03.40 /Applications/Google Chrome.app/Contents/Frameworks/G
+swamysivasubramaniyan 23390   0.0  0.2 43559008  59700   ??  S    11:41AM   0:01.53 /Applications/Google Chrome.app/Contents/Framewor
+package main
+ks/G
+swamysivasubramaniyan 23028   0.0  0.1 43562964  50024   ??  S    10:31AM   0:01.79 /Applications/Google Chrome.app/Contents/Frameworks/G
+swamysivasubramaniyan 23009   0.0  0.2 43564312  68304   ??  S    10:27AM   0:01.75 /Applications/Google Chrome.app/Contents/Frameworks/G
+swamysivasubramaniyan 22947   0.0  0.2 43454540  79776   ??  S    10:15AM   0:01.16 /Applications/Google Chrome.app/Contents/Frameworks/G
+swamysivasubramaniyan 22941   0.0  0.2 43549420  67356   ??  S    10:15AM   0:00.76 /Applications/Google Chrome.app/Contents/Frameworks/G
+swamysivasubramaniyan 22937   0.0  0.0  4937560   4444   ??  Ss   10:15AM   0:00.04 /System/Library/PrivateFrameworks/XprotectFramework.f
+swamysivasubramaniyan 22844   0.0  0.0  5247156  10784   ??  Ss   10:00AM   0:01.33 /Applications/Backup and Sync.app/Contents/PlugIns/Fi
+swamysivasubramaniyan 22843   0.0  0.0  4970784  10068   ??  Ss   10:00AM   0:00.10 /Users/swamysivasubramaniyan/Library/Application Supp
+swamysivasubramaniyan 22842   0.0  0.0  5528508  12568   ??  Ss   10:00AM   0:00.25 /Applications/Box.app/Contents/PlugIns/FinderSyncExt.
+swamysivasubramaniyan 22840   0.0  0.4 43602708 119028   ??  S    10:00AM   0:05.31 /Applications/Google Chrome.app/Contents/Frameworks/G
+root             22633   0.0  0.0  4522780   3188   ??  Ss    9:42AM   0:00.02 /System/Library/PrivateFrameworks/SystemAdministratio
+
+home/docker/httpd on  master [🤷‍] on ☁️  (us-east-1)
+➜  vim test.go
+package main
+
+import "fmt"
+
+func repeat(s string, channel chan bool) {
+ for i := 0; i < 30; i++ {
+fmt.Print(s)}
+channel <- true}
+
+func main() {
+channel := make(chan bool) go repeat("x", channel)
+go repeat("y", channel) <-channel
+<-channel }
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+
+
