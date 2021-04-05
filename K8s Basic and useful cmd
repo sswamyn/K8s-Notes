@@ -7,3 +7,4 @@ kubectl version --short && \
  kubectl cluster-info
  
  ```
+
